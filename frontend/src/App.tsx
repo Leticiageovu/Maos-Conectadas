@@ -153,12 +153,16 @@ function App() {
                 <strong>{new Intl.NumberFormat('pt-BR', {
                   style: 'currency', currency: 'BRL',
                 }).format(product.price)}</strong>
+                <p className="catalog-meta">
+                  {product.category}
+                  {product.variations?.[0]?.size && ` · Tamanho ${product.variations[0].size}`}
+                </p>
                 <div className="variation-list">
                   {(product.variations?.length ? product.variations : [{
                     size: 'Único', color: product.category, quantity: product.quantity,
                   }]).map((item, index) => (
                     <span key={`${item.color}-${item.size}-${index}`}>
-                      {item.color} · {item.size}<b>{item.quantity} un.</b>
+                      {item.color}<b>{item.quantity} un.</b>
                     </span>
                   ))}
                 </div>
