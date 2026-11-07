@@ -1,0 +1,10 @@
+com\maosconectadas\backend\config\SecurityConfig.class
+com\maosconectadas\backend\product\ProductService.class
+com\maosconectadas\backend\product\ProductVariation.class
+com\maosconectadas\backend\product\ProductController.class
+com\maosconectadas\backend\product\VariationRequest.class
+com\maosconectadas\backend\config\DataInitializer.class
+com\maosconectadas\backend\product\Product.class
+com\maosconectadas\backend\product\ProductRepository.class
+com\maosconectadas\backend\product\ProductRequest.class
+com\maosconectadas\backend\MaosConectadasApplication.class

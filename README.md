@@ -86,3 +86,40 @@ O projeto busca contribuir para a organização das atividades produtivas e apoi
 
 As funcionalidades, os testes, a integração contínua e as validações serão documentados à medida que forem implementados e realizados.
 Projeto acadêmico — Análise e Desenvolvimento de Sistemas.
+
+## Executando o projeto
+
+### Backend
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+Por padrão, o backend usa H2 em memória. Para PostgreSQL:
+
+```powershell
+docker compose up -d postgres
+$env:DATABASE_URL="jdbc:postgresql://localhost:5432/maos_conectadas"
+$env:DATABASE_USERNAME="maos"
+$env:DATABASE_PASSWORD="maos"
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+### Frontend
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+O frontend fica disponível em `http://localhost:5173` e a API em `http://localhost:8080/api`.
+
+## Estrutura
+
+- `backend/`: API REST com Spring Boot.
+- `frontend/`: interface web com React e TypeScript.
+- `docs/`: arquitetura, requisitos, validação e evidências.
+- `.github/workflows/ci.yml`: execução de testes, lint e build.
