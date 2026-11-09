@@ -371,7 +371,7 @@ function App() {
   }
 
   return (
-    <main>
+    <main className="app-shell">
       <header className="topbar">
         <h1 className="brand">MÃOS CONECTADAS</h1>
         {page !== 'stock' && <div className="menu-container">
@@ -500,10 +500,12 @@ function App() {
                   />
                   <span>Selecionar produto</span>
                 </label>
-                <h3>{product.name}</h3>
-                <strong>{new Intl.NumberFormat('pt-BR', {
-                  style: 'currency', currency: 'BRL',
-                }).format(product.price)}</strong>
+                <div className="catalog-card-heading">
+                  <h3>{product.name}</h3>
+                  <strong>{new Intl.NumberFormat('pt-BR', {
+                    style: 'currency', currency: 'BRL',
+                  }).format(product.price)}</strong>
+                </div>
                 <p className="catalog-meta">
                   {product.category}
                   {product.variations?.[0]?.size && ` · Tamanho ${product.variations[0].size}`}

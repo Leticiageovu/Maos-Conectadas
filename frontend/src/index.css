@@ -1,5 +1,6 @@
 :root { font-family: Inter, sans-serif; font-weight: 400; color: #242424; background: #F7F3EE; font-synthesis: none; text-rendering: optimizeLegibility; }
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
+html, body { min-width: 0; }
+body { margin: 0; }
 h1, h2, h3, strong, b { font-weight: 400; }
 input, textarea, button { font: inherit; }
