@@ -15,6 +15,19 @@ type Product = {
   variations?: Variation[]
 }
 
+type Client = { id: number; name: string; phone: string; email?: string; notes?: string }
+type CustomerOrder = {
+  id: number
+  clientId: number
+  clientName: string
+  productId: number
+  productName: string
+  quantity: number
+  expectedDate: string
+  notes?: string
+  status: 'PENDENTE'
+}
+
 type UserProfile = { name: string; phone: string; email: string }
 type AuthMode = 'login' | 'register'
 type Page = 'clients' | 'catalog' | 'products' | 'orders' | 'stock'
@@ -44,8 +57,17 @@ function App() {
     name: '', phone: '', email: '', password: '', confirmPassword: '',
   })
   const [products, setProducts] = useState<Product[]>([])
+  const [clients, setClients] = useState<Client[]>([])
+  const [orders, setOrders] = useState<CustomerOrder[]>([])
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [savingClient, setSavingClient] = useState(false)
+  const [savingOrder, setSavingOrder] = useState(false)
+  const [editingClientId, setEditingClientId] = useState<number | null>(null)
+  const [clientForm, setClientForm] = useState({ name: '', phone: '', email: '', notes: '' })
+  const [orderForm, setOrderForm] = useState({
+    clientId: '', productId: '', quantity: '1', expectedDate: '', notes: '',
+  })
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
   const [stockVariations, setStockVariations] = useState<Variation[]>([])
   const [selectedStockVariationIndex, setSelectedStockVariationIndex] = useState(0)
@@ -72,6 +94,24 @@ function App() {
       } else {
         setError('Não foi possível carregar os produtos. Verifique a conexão com o backend.')
       }
+    }
+  }
+
+  async function loadClients() {
+    try {
+      const response = await api.get<Client[]>('/clients')
+      setClients(response.data)
+    } catch {
+      setError('Não foi possível carregar as clientes. Tente novamente.')
+    }
+  }
+
+  async function loadOrders() {
+    try {
+      const response = await api.get<CustomerOrder[]>('/orders')
+      setOrders(response.data)
+    } catch {
+      setError('Não foi possível carregar as encomendas. Tente novamente.')
     }
   }
 
@@ -106,6 +146,102 @@ function App() {
     setMenuOpen(false)
     setError('')
     setSelectedProductId(null)
+    if (nextPage === 'clients') void loadClients()
+    if (nextPage === 'orders') {
+      void loadClients()
+      void loadOrders()
+    }
+  }
+
+  function startClientEdit(client: Client) {
+    setEditingClientId(client.id)
+    setClientForm({
+      name: client.name,
+      phone: client.phone,
+      email: client.email ?? '',
+      notes: client.notes ?? '',
+    })
+    setError('')
+  }
+
+  function cancelClientEdit() {
+    setEditingClientId(null)
+    setClientForm({ name: '', phone: '', email: '', notes: '' })
+  }
+
+  async function saveClient(event: FormEvent) {
+    event.preventDefault()
+    setSavingClient(true)
+    setError('')
+    try {
+      if (editingClientId === null) {
+        await api.post('/clients', clientForm)
+      } else {
+        await api.put(`/clients/${editingClientId}`, clientForm)
+      }
+      cancelClientEdit()
+      await loadClients()
+    } catch {
+      setError('Não foi possível salvar a cliente. Confira os dados e tente novamente.')
+    } finally {
+      setSavingClient(false)
+    }
+  }
+
+  async function deleteClient(client: Client) {
+    if (!window.confirm(`Excluir o contato de ${client.name}?`)) return
+    setError('')
+    try {
+      await api.delete(`/clients/${client.id}`)
+      await loadClients()
+    } catch (requestError) {
+      const detail = axios.isAxiosError<{ detail?: string }>(requestError)
+        ? requestError.response?.data?.detail
+        : undefined
+      setError(detail ?? 'Não foi possível excluir a cliente. Tente novamente.')
+    }
+  }
+
+  function startOrderForClient(client?: Client) {
+    const expectedDate = new Date()
+    expectedDate.setDate(expectedDate.getDate() + 7)
+    const localDate = [
+      expectedDate.getFullYear(),
+      String(expectedDate.getMonth() + 1).padStart(2, '0'),
+      String(expectedDate.getDate()).padStart(2, '0'),
+    ].join('-')
+    setOrderForm({
+      clientId: client ? String(client.id) : '',
+      productId: '',
+      quantity: '1',
+      expectedDate: localDate,
+      notes: '',
+    })
+    setPage('orders')
+    setMenuOpen(false)
+    setError('')
+    void loadClients()
+    void loadOrders()
+  }
+
+  async function saveOrder(event: FormEvent) {
+    event.preventDefault()
+    setSavingOrder(true)
+    setError('')
+    try {
+      await api.post('/orders', {
+        ...orderForm,
+        clientId: Number(orderForm.clientId),
+        productId: Number(orderForm.productId),
+        quantity: Number(orderForm.quantity),
+      })
+      setOrderForm((current) => ({ ...current, notes: '' }))
+      await loadOrders()
+    } catch {
+      setError('Não foi possível cadastrar a encomenda. Confira os dados e tente novamente.')
+    } finally {
+      setSavingOrder(false)
+    }
   }
 
   function addVariation() {
@@ -194,6 +330,8 @@ function App() {
       await api.post('/auth/logout')
       setUser(null)
       setProducts([])
+      setClients([])
+      setOrders([])
       setPage('products')
       setMenuOpen(false)
       setAuthForm({ name: '', phone: '', email: '', password: '', confirmPassword: '' })
@@ -415,6 +553,8 @@ function App() {
           : navigationItems.find((item) => item.id === page)?.label}</h2>
         {page === 'products' && <p>Preencha os dados para adicionar ao catálogo.</p>}
         {page === 'stock' && <p>Altere a quantidade de uma variação do produto.</p>}
+        {page === 'clients' && <p>Organize seus contatos e anotações sobre cada cliente.</p>}
+        {page === 'orders' && <p>Cadastre e acompanhe as encomendas feitas pelas clientes.</p>}
       </section>
 
       {error && <p className="error">{error}</p>}
@@ -616,10 +756,162 @@ function App() {
         </section>
       )}
 
-      {(page === 'clients' || page === 'orders') && (
-        <section className="coming-soon" aria-live="polite">
-          <h3>{page === 'clients' ? 'Cadastro de clientes' : 'Controle de encomendas'}</h3>
-          <p>Esta funcionalidade estará disponível em breve.</p>
+      {page === 'clients' && (
+        <section className="feature-page">
+          <div className="form-card">
+            <h3>{editingClientId === null ? 'Novo contato' : 'Editar contato'}</h3>
+            <form className="product-form" onSubmit={saveClient}>
+              <label>Nome *
+                <input required maxLength={120} value={clientForm.name}
+                  onChange={(event) => setClientForm({ ...clientForm, name: event.target.value })} />
+              </label>
+              <div className="form-row">
+                <label>Celular *
+                  <input required maxLength={30} type="tel" value={clientForm.phone}
+                    onChange={(event) => setClientForm({ ...clientForm, phone: event.target.value })} />
+                </label>
+                <label>E-mail
+                  <input maxLength={254} type="email" value={clientForm.email}
+                    onChange={(event) => setClientForm({ ...clientForm, email: event.target.value })} />
+                </label>
+              </div>
+              <label>Observações
+                <textarea maxLength={1000} placeholder="Preferências, medidas ou outras informações"
+                  value={clientForm.notes}
+                  onChange={(event) => setClientForm({ ...clientForm, notes: event.target.value })} />
+              </label>
+              <button className="save-button" type="submit" disabled={savingClient}>
+                {savingClient ? 'Salvando...' : editingClientId === null ? 'Salvar contato' : 'Atualizar contato'}
+              </button>
+              {editingClientId !== null && (
+                <button className="back-to-catalog" type="button" onClick={cancelClientEdit}>
+                  Cancelar edição
+                </button>
+              )}
+            </form>
+          </div>
+
+          <div className="client-section">
+            <div className="section-heading">
+              <h3>Minha agenda</h3>
+              <span>{clients.length} contatos</span>
+            </div>
+            {clients.length === 0 ? (
+              <p className="empty-state">Ainda não há contatos cadastrados.</p>
+            ) : (
+              <div className="client-list">
+                {clients.map((client) => (
+                  <article className="client-card" key={client.id}>
+                    <div className="client-card-heading">
+                      <h4>{client.name}</h4>
+                      <a href={`tel:${client.phone}`}>Ligar</a>
+                    </div>
+                    <p className="client-contact">{client.phone}{client.email && ` · ${client.email}`}</p>
+                    {client.notes && <p className="client-notes">{client.notes}</p>}
+                    <div className="client-actions">
+                      <button className="save-button" type="button"
+                        onClick={() => startOrderForClient(client)}>Nova encomenda</button>
+                      <button className="back-to-catalog" type="button"
+                        onClick={() => startClientEdit(client)}>Editar</button>
+                      <button className="back-to-catalog" type="button"
+                        onClick={() => void deleteClient(client)}>Excluir</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {page === 'orders' && (
+        <section className="feature-page">
+          <div className="form-card">
+            <h3>Nova encomenda</h3>
+            {clients.length === 0 && (
+              <p className="empty-state">
+                Cadastre uma cliente antes de criar a encomenda.
+                <button className="text-button" type="button" onClick={() => navigateTo('clients')}>
+                  Ir para Clientes
+                </button>
+              </p>
+            )}
+            {products.length === 0 && (
+              <p className="empty-state">
+                Cadastre um produto antes de criar a encomenda.
+                <button className="text-button" type="button" onClick={() => navigateTo('products')}>
+                  Ir para Cadastrar produto
+                </button>
+              </p>
+            )}
+            {clients.length > 0 && products.length > 0 && (
+              <form className="product-form" onSubmit={saveOrder}>
+                <label>Cliente *
+                  <select required value={orderForm.clientId}
+                    onChange={(event) => setOrderForm({ ...orderForm, clientId: event.target.value })}>
+                    <option value="">Selecione uma cliente</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>{client.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>Produto *
+                  <select required value={orderForm.productId}
+                    onChange={(event) => setOrderForm({ ...orderForm, productId: event.target.value })}>
+                    <option value="">Selecione um produto</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>{product.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <div className="form-row">
+                  <label>Quantidade *
+                    <input required min="1" step="1" type="number" value={orderForm.quantity}
+                      onChange={(event) => setOrderForm({ ...orderForm, quantity: event.target.value })} />
+                  </label>
+                  <label>Previsão de entrega *
+                    <input required type="date" value={orderForm.expectedDate}
+                      onChange={(event) => setOrderForm({ ...orderForm, expectedDate: event.target.value })} />
+                  </label>
+                </div>
+                <label>Observações
+                  <textarea maxLength={1000} placeholder="Detalhes ou combinações da encomenda"
+                    value={orderForm.notes}
+                    onChange={(event) => setOrderForm({ ...orderForm, notes: event.target.value })} />
+                </label>
+                <button className="save-button" type="submit" disabled={savingOrder}>
+                  {savingOrder ? 'Salvando...' : 'Cadastrar encomenda'}
+                </button>
+              </form>
+            )}
+          </div>
+
+          <div className="client-section">
+            <div className="section-heading">
+              <h3>Encomendas cadastradas</h3>
+              <span>{orders.length} encomendas</span>
+            </div>
+            {orders.length === 0 ? (
+              <p className="empty-state">Ainda não há encomendas cadastradas.</p>
+            ) : (
+              <div className="order-list">
+                {orders.map((order) => (
+                  <article className="order-card" key={order.id}>
+                    <div className="client-card-heading">
+                      <h4>{order.productName}</h4>
+                      <span className="order-status">Pendente</span>
+                    </div>
+                    <p className="client-contact">Cliente: {order.clientName} · Quantidade: {order.quantity}</p>
+                    <p className="client-contact">
+                      Previsão: {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' })
+                        .format(new Date(`${order.expectedDate}T12:00:00`))}
+                    </p>
+                    {order.notes && <p className="client-notes">{order.notes}</p>}
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
         </section>
       )}
     </main>

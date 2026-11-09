@@ -11,13 +11,15 @@ A solução busca substituir controles manuais e informações dispersas por um 
 ### Objetivo
 Desenvolver um MVP (Produto Mínimo Viável) funcional, com foco nas operações essenciais de cadastro, consulta e atualização de estoque.
 
-### Funcionalidades previstas
+### Funcionalidades
 - Autenticação de usuários.
 - Cadastro de produtos com nome, descrição, categoria, preço e foto opcional.
 - Cadastro de variações de produtos, como tamanho e cor.
 - Registro da quantidade disponível por variação.
 - Consulta do catálogo de produtos.
 - Atualização da quantidade de uma variação específica.
+- Agenda de clientes com celular, e-mail, observações, edição e exclusão.
+- Cadastro e consulta de encomendas vinculadas a uma cliente e a um produto, com quantidade, previsão de entrega e status pendente.
 - Pesquisa de produtos pelo nome (funcionalidade desejável).
 
 ### Tecnologias previstas
@@ -89,7 +91,7 @@ Projeto acadêmico — Análise e Desenvolvimento de Sistemas.
 
 ## Executando o projeto
 
-Ao abrir o sistema, crie uma conta com nome, celular, e-mail e senha. As senhas são armazenadas com hash e cada conta acessa apenas os próprios produtos. Produtos preexistentes sem uma conta associada não são exibidos para evitar compartilhamento entre usuários.
+Ao abrir o sistema, crie uma conta com nome, celular, e-mail e senha. As senhas são armazenadas com hash e cada conta acessa apenas os próprios produtos, clientes e encomendas. Produtos preexistentes sem uma conta associada não são exibidos para evitar compartilhamento entre usuários. Encomendas são registradas como pendentes e não alteram o estoque automaticamente.
 
 ### Backend
 
