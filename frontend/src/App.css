@@ -48,6 +48,10 @@ main { width: 100%; max-width: 1200px; margin: 0 auto; padding: 28px clamp(16px,
 .variation-list span { display: flex; justify-content: space-between; color: #555; border-top: 1px solid #eee; padding: 7px 0; font-size: 13px; }
 .variation-list span:last-child { padding-bottom: 0; }
 .variation-list b { font-weight: 400; }
+.delete-product-button { min-height: 40px; margin-top: 14px; padding: 0 12px; border: 1px solid #e6c8c2; border-radius: 8px; background: #fff; color: #9c3d2d; font-size: 13px; font-weight: 600; cursor: pointer; }
+.delete-product-button:hover:not(:disabled) { background: #fff0ed; }
+.delete-product-button:disabled { opacity: .65; cursor: not-allowed; }
+.success-message { padding: 12px; border: 1px solid #c9e2d2; border-radius: 8px; background: #edf6f0; color: #2f6645; }
 .stock-update-button { width: 100%; margin-top: 14px; }
 .save-button:disabled { cursor: not-allowed; }
 .stock-page { display: grid; gap: 18px; }

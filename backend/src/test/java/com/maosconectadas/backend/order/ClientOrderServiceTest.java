@@ -93,6 +93,11 @@ class ClientOrderServiceTest {
             .andExpect(jsonPath("$[0].productName").value("Bolsa artesanal"))
             .andExpect(jsonPath("$[0].status").value("PENDENTE"));
 
+        mockMvc.perform(delete("/api/products/{id}", product.getId())
+                .with(user(owner))
+                .with(csrf()))
+            .andExpect(status().isConflict());
+
         authService.register(new RegisterRequest(
             "Outra Pessoa", "11888888888", "outra@example.com",
             "senhaSegura456", "senhaSegura456"));

@@ -10,4 +10,5 @@ public interface OrderRepository extends JpaRepository<CustomerOrder, Long> {
     List<CustomerOrder> findAllByOwnerIdOrderByExpectedDateAsc(Long ownerId);
 
     boolean existsByClientId(Long clientId);
+    boolean existsByProductId(Long productId);
 }

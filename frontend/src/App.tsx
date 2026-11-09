@@ -60,7 +60,9 @@ function App() {
   const [clients, setClients] = useState<Client[]>([])
   const [orders, setOrders] = useState<CustomerOrder[]>([])
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [saving, setSaving] = useState(false)
+  const [deletingProductId, setDeletingProductId] = useState<number | null>(null)
   const [savingClient, setSavingClient] = useState(false)
   const [savingOrder, setSavingOrder] = useState(false)
   const [editingClientId, setEditingClientId] = useState<number | null>(null)
@@ -145,6 +147,7 @@ function App() {
     setPage(nextPage)
     setMenuOpen(false)
     setError('')
+    setSuccessMessage('')
     setSelectedProductId(null)
     if (nextPage === 'clients') void loadClients()
     if (nextPage === 'orders') {
@@ -241,6 +244,27 @@ function App() {
       setError('Não foi possível cadastrar a encomenda. Confira os dados e tente novamente.')
     } finally {
       setSavingOrder(false)
+    }
+  }
+
+  async function deleteProduct(product: Product) {
+    if (!window.confirm(`Deseja excluir o produto "${product.name}" do catálogo?`)) return
+
+    setDeletingProductId(product.id)
+    setError('')
+    setSuccessMessage('')
+    try {
+      await api.delete(`/products/${product.id}`)
+      setProducts((current) => current.filter((item) => item.id !== product.id))
+      setSelectedProductId((current) => current === product.id ? null : current)
+      setSuccessMessage(`Produto "${product.name}" excluído com sucesso.`)
+    } catch (requestError) {
+      const detail = axios.isAxiosError<{ detail?: string }>(requestError)
+        ? requestError.response?.data?.detail
+        : undefined
+      setError(detail ?? 'Não foi possível excluir o produto. Tente novamente.')
+    } finally {
+      setDeletingProductId(null)
     }
   }
 
@@ -558,6 +582,7 @@ function App() {
       </section>
 
       {error && <p className="error">{error}</p>}
+      {successMessage && <p className="success-message" role="status">{successMessage}</p>}
 
       {page === 'products' && (
         <section className="content">
@@ -659,6 +684,14 @@ function App() {
                     </span>
                   ))}
                 </div>
+                <button
+                  className="delete-product-button"
+                  type="button"
+                  disabled={deletingProductId !== null}
+                  onClick={() => void deleteProduct(product)}
+                >
+                  {deletingProductId === product.id ? 'Excluindo...' : 'Excluir produto'}
+                </button>
               </article>
             ))}
           </div>
