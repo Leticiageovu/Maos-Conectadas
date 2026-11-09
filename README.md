@@ -115,7 +115,9 @@ npm install
 npm run dev
 ```
 
-O frontend fica disponível em `http://localhost:5173` e a API em `http://localhost:8080/api`.
+O frontend fica disponível em `http://localhost:5173`. As chamadas `/api` são encaminhadas pelo Vite para `http://localhost:8080`, evitando que o navegador dependa do endereço `localhost` para acessar o backend.
+
+Para usar outro endereço de backend no desenvolvimento, defina `VITE_BACKEND_URL` antes de iniciar o frontend. Para apontar o cliente diretamente a uma API, também é possível definir `VITE_API_URL` com a URL base da API.
 
 ## Estrutura
 
