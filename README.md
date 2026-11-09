@@ -89,6 +89,8 @@ Projeto acadêmico — Análise e Desenvolvimento de Sistemas.
 
 ## Executando o projeto
 
+Ao abrir o sistema, crie uma conta com nome, celular, e-mail e senha. As senhas são armazenadas com hash e cada conta acessa apenas os próprios produtos. Produtos preexistentes sem uma conta associada não são exibidos para evitar compartilhamento entre usuários.
+
 ### Backend
 
 ```powershell
@@ -96,7 +98,7 @@ cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-Por padrão, o backend usa H2 em memória. Para PostgreSQL:
+Por padrão, o backend usa H2 em arquivo (`backend/maos.mv.db`), preservando contas e produtos entre reinicializações. Para PostgreSQL:
 
 ```powershell
 docker compose up -d postgres

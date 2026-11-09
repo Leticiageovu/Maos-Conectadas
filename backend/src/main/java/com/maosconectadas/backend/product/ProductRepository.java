@@ -7,14 +7,12 @@ import java.util.Optional;
 import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    @Override
     @EntityGraph(attributePaths = "variations")
-    List<Product> findAll();
-
-    @Override
-    @EntityGraph(attributePaths = "variations")
-    Optional<Product> findById(Long id);
+    List<Product> findAllByOwnerId(Long ownerId);
 
     @EntityGraph(attributePaths = "variations")
-    List<Product> findByNameContainingIgnoreCase(String name);
+    Optional<Product> findByIdAndOwnerId(Long id, Long ownerId);
+
+    @EntityGraph(attributePaths = "variations")
+    List<Product> findByOwnerIdAndNameContainingIgnoreCase(Long ownerId, String name);
 }

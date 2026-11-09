@@ -1,5 +1,7 @@
 package com.maosconectadas.backend.product;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.maosconectadas.backend.auth.UserAccount;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -26,6 +28,11 @@ public class Product {
     private Integer quantity;
     private String imageUrl;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    private UserAccount owner;
+
     @ElementCollection
     @CollectionTable(name = "product_variations", joinColumns = @JoinColumn(name = "product_id"))
     private List<ProductVariation> variations = new ArrayList<>();
@@ -49,6 +56,7 @@ public class Product {
     public Integer getQuantity() { return quantity; }
     public String getImageUrl() { return imageUrl; }
     public List<ProductVariation> getVariations() { return variations; }
+    public UserAccount getOwner() { return owner; }
     public void setName(String name) { this.name = name; }
     public void setDescription(String description) { this.description = description; }
     public void setCategory(String category) { this.category = category; }
@@ -56,4 +64,5 @@ public class Product {
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
     public void setVariations(List<ProductVariation> variations) { this.variations = variations; }
+    public void setOwner(UserAccount owner) { this.owner = owner; }
 }

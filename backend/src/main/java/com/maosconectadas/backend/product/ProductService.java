@@ -1,5 +1,6 @@
 package com.maosconectadas.backend.product;
 
+import com.maosconectadas.backend.auth.UserAccount;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,23 +16,25 @@ public class ProductService {
         this.repository = repository;
     }
 
-    public List<Product> findAll(String search) {
+    public List<Product> findAll(String search, UserAccount owner) {
         return search == null || search.isBlank()
-            ? repository.findAll()
-            : repository.findByNameContainingIgnoreCase(search.trim());
+            ? repository.findAllByOwnerId(owner.getId())
+            : repository.findByOwnerIdAndNameContainingIgnoreCase(owner.getId(), search.trim());
     }
 
-    public Product findById(Long id) {
-        return repository.findById(id)
+    public Product findById(Long id, UserAccount owner) {
+        return repository.findByIdAndOwnerId(id, owner.getId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado"));
     }
 
-    public Product create(ProductRequest request) {
-        return repository.save(toEntity(request));
+    public Product create(ProductRequest request, UserAccount owner) {
+        Product product = toEntity(request);
+        product.setOwner(owner);
+        return repository.save(product);
     }
 
-    public Product update(Long id, ProductRequest request) {
-        Product product = findById(id);
+    public Product update(Long id, ProductRequest request, UserAccount owner) {
+        Product product = findById(id, owner);
         product.setName(request.name());
         product.setDescription(request.description());
         product.setCategory(request.category());
@@ -42,8 +45,8 @@ public class ProductService {
         return repository.save(product);
     }
 
-    public void delete(Long id) {
-        repository.delete(findById(id));
+    public void delete(Long id, UserAccount owner) {
+        repository.delete(findById(id, owner));
     }
 
     private Product toEntity(ProductRequest request) {
