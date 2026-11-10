@@ -1,1 +1,3 @@
 com\maosconectadas\backend\product\ProductServiceTest.class
+com\maosconectadas\backend\auth\AuthControllerTest.class
+com\maosconectadas\backend\order\ClientOrderServiceTest.class

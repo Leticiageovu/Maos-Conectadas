@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Mãos Conectadas Backend</a> &gt; <a href="index.source.html" class="el_package">com.maosconectadas.backend.auth</a> &gt; <span class="el_source">AuthService.java</span></div><h1>AuthService.java</h1><pre class="source lang-java linenums">package com.maosconectadas.backend.auth;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Locale;
+
+@Service
+public class AuthService implements UserDetailsService {
+    private final UserAccountRepository repository;
+    private final PasswordEncoder passwordEncoder;
+
+<span class="fc" id="L18">    public AuthService(UserAccountRepository repository, PasswordEncoder passwordEncoder) {</span>
+<span class="fc" id="L19">        this.repository = repository;</span>
+<span class="fc" id="L20">        this.passwordEncoder = passwordEncoder;</span>
+<span class="fc" id="L21">    }</span>
+
+    public UserProfile register(RegisterRequest request) {
+<span class="fc" id="L24">        String email = normalizeEmail(request.email());</span>
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (repository.existsByEmailIgnoreCase(email)) {</span>
+<span class="nc" id="L26">            throw new ResponseStatusException(HttpStatus.CONFLICT, &quot;Este e-mail já está cadastrado.&quot;);</span>
+        }
+
+<span class="fc" id="L29">        UserAccount account = new UserAccount(</span>
+<span class="fc" id="L30">            request.name().trim(),</span>
+<span class="fc" id="L31">            request.phone().trim(),</span>
+            email,
+<span class="fc" id="L33">            passwordEncoder.encode(request.password()));</span>
+<span class="fc" id="L34">        return UserProfile.from(repository.save(account));</span>
+    }
+
+    public UserProfile profile(UserAccount account) {
+<span class="fc" id="L38">        return UserProfile.from(account);</span>
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+<span class="fc" id="L43">        return repository.findByEmailIgnoreCase(normalizeEmail(email))</span>
+<span class="fc" id="L44">            .orElseThrow(() -&gt; new UsernameNotFoundException(&quot;Conta não encontrada.&quot;));</span>
+    }
+
+    private String normalizeEmail(String email) {
+<span class="fc" id="L48">        return email.trim().toLowerCase(Locale.ROOT);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

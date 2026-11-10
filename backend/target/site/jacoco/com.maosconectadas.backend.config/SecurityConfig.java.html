@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SecurityConfig.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Mãos Conectadas Backend</a> &gt; <a href="index.source.html" class="el_package">com.maosconectadas.backend.config</a> &gt; <span class="el_source">SecurityConfig.java</span></div><h1>SecurityConfig.java</h1><pre class="source lang-java linenums">package com.maosconectadas.backend.config;
+
+import com.maosconectadas.backend.auth.AuthService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.session.ChangeSessionIdAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
+
+@Configuration
+<span class="fc" id="L26">public class SecurityConfig {</span>
+    @Bean
+    PasswordEncoder passwordEncoder() {
+<span class="fc" id="L29">        return new BCryptPasswordEncoder();</span>
+    }
+
+    @Bean
+    AuthenticationManager authenticationManager(AuthService authService, PasswordEncoder passwordEncoder) {
+<span class="fc" id="L34">        DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider(authService);</span>
+<span class="fc" id="L35">        authenticationProvider.setPasswordEncoder(passwordEncoder);</span>
+<span class="fc" id="L36">        return new ProviderManager(authenticationProvider);</span>
+    }
+
+    @Bean
+    SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+<span class="fc" id="L41">        return new ChangeSessionIdAuthenticationStrategy();</span>
+    }
+
+    @Bean
+    SecurityContextRepository securityContextRepository() {
+<span class="fc" id="L46">        return new HttpSessionSecurityContextRepository();</span>
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource(
+        @Value(&quot;${app.cors.allowed-origin:http://localhost:5173}&quot;) String allowedOrigin
+    ) {
+<span class="fc" id="L53">        CorsConfiguration configuration = new CorsConfiguration();</span>
+<span class="fc" id="L54">        configuration.setAllowedOrigins(List.of(allowedOrigin));</span>
+<span class="fc" id="L55">        configuration.setAllowedMethods(List.of(&quot;GET&quot;, &quot;POST&quot;, &quot;PUT&quot;, &quot;DELETE&quot;, &quot;OPTIONS&quot;));</span>
+<span class="fc" id="L56">        configuration.setAllowedHeaders(List.of(&quot;Content-Type&quot;, &quot;X-CSRF-TOKEN&quot;));</span>
+<span class="fc" id="L57">        configuration.setAllowCredentials(true);</span>
+
+<span class="fc" id="L59">        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();</span>
+<span class="fc" id="L60">        source.registerCorsConfiguration(&quot;/api/**&quot;, configuration);</span>
+<span class="fc" id="L61">        return source;</span>
+    }
+
+    @Bean
+    SecurityFilterChain securityFilterChain(
+        HttpSecurity http,
+        AuthenticationManager authenticationManager,
+        SecurityContextRepository securityContextRepository
+    ) throws Exception {
+<span class="fc" id="L70">        return http</span>
+<span class="fc" id="L71">            .authenticationManager(authenticationManager)</span>
+<span class="fc" id="L72">            .securityContext(context -&gt; context.securityContextRepository(securityContextRepository))</span>
+<span class="fc" id="L73">            .sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))</span>
+<span class="fc" id="L74">            .cors(cors -&gt; {})</span>
+<span class="fc" id="L75">            .exceptionHandling(exceptions -&gt; exceptions</span>
+<span class="fc" id="L76">                .authenticationEntryPoint((request, response, exception) -&gt;</span>
+<span class="fc" id="L77">                    response.sendError(401, &quot;Autenticação necessária.&quot;)))</span>
+<span class="fc" id="L78">            .authorizeHttpRequests(auth -&gt; auth</span>
+<span class="fc" id="L79">                .requestMatchers(&quot;/api/auth/csrf&quot;, &quot;/api/auth/register&quot;, &quot;/api/auth/login&quot;).permitAll()</span>
+<span class="fc" id="L80">                .requestMatchers(&quot;/actuator/health&quot;).permitAll()</span>
+<span class="fc" id="L81">                .requestMatchers(&quot;/api/**&quot;).authenticated()</span>
+<span class="fc" id="L82">                .anyRequest().permitAll())</span>
+<span class="fc" id="L83">            .build();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

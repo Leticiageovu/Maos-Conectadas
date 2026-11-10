@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Client.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Mãos Conectadas Backend</a> &gt; <a href="index.source.html" class="el_package">com.maosconectadas.backend.client</a> &gt; <span class="el_source">Client.java</span></div><h1>Client.java</h1><pre class="source lang-java linenums">package com.maosconectadas.backend.client;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.maosconectadas.backend.auth.UserAccount;
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = &quot;clients&quot;)
+public class Client {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, length = 120)
+    private String name;
+
+    @Column(nullable = false, length = 30)
+    private String phone;
+
+    @Column(length = 254)
+    private String email;
+
+    @Column(length = 1000)
+    private String notes;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = &quot;owner_id&quot;, nullable = false)
+    private UserAccount owner;
+
+<span class="fc" id="L31">    protected Client() {}</span>
+
+<span class="fc" id="L33">    public Client(String name, String phone, String email, String notes, UserAccount owner) {</span>
+<span class="fc" id="L34">        this.name = name;</span>
+<span class="fc" id="L35">        this.phone = phone;</span>
+<span class="fc" id="L36">        this.email = email;</span>
+<span class="fc" id="L37">        this.notes = notes;</span>
+<span class="fc" id="L38">        this.owner = owner;</span>
+<span class="fc" id="L39">    }</span>
+
+<span class="fc" id="L41">    public Long getId() { return id; }</span>
+<span class="fc" id="L42">    public String getName() { return name; }</span>
+<span class="fc" id="L43">    public String getPhone() { return phone; }</span>
+<span class="fc" id="L44">    public String getEmail() { return email; }</span>
+<span class="fc" id="L45">    public String getNotes() { return notes; }</span>
+<span class="nc" id="L46">    public UserAccount getOwner() { return owner; }</span>
+
+<span class="nc" id="L48">    public void setName(String name) { this.name = name; }</span>
+<span class="nc" id="L49">    public void setPhone(String phone) { this.phone = phone; }</span>
+<span class="nc" id="L50">    public void setEmail(String email) { this.email = email; }</span>
+<span class="nc" id="L51">    public void setNotes(String notes) { this.notes = notes; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

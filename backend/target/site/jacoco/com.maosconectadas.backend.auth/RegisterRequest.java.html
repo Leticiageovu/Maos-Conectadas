@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RegisterRequest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Mãos Conectadas Backend</a> &gt; <a href="index.source.html" class="el_package">com.maosconectadas.backend.auth</a> &gt; <span class="el_source">RegisterRequest.java</span></div><h1>RegisterRequest.java</h1><pre class="source lang-java linenums">package com.maosconectadas.backend.auth;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+import java.nio.charset.StandardCharsets;
+
+<span class="fc" id="L10">public record RegisterRequest(</span>
+    @NotBlank @Size(max = 120) String name,
+    @NotBlank @Size(max = 30) String phone,
+    @NotBlank @Email @Size(max = 254) String email,
+    @NotBlank @Size(min = 8, max = 72) String password,
+    @NotBlank String confirmPassword
+) {
+    @AssertTrue(message = &quot;As senhas não conferem&quot;)
+    public boolean isPasswordConfirmed() {
+<span class="pc bpc" id="L19" title="1 of 4 branches missed.">        return password != null &amp;&amp; password.equals(confirmPassword);</span>
+    }
+
+    @AssertTrue(message = &quot;A senha excede o limite permitido.&quot;)
+    public boolean isPasswordWithinLimit() {
+<span class="pc bpc" id="L24" title="2 of 4 branches missed.">        return password != null &amp;&amp; password.getBytes(StandardCharsets.UTF_8).length &lt;= 72;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

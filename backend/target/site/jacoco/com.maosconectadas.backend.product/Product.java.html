@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="pt"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Product.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Mãos Conectadas Backend</a> &gt; <a href="index.source.html" class="el_package">com.maosconectadas.backend.product</a> &gt; <span class="el_source">Product.java</span></div><h1>Product.java</h1><pre class="source lang-java linenums">package com.maosconectadas.backend.product;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.maosconectadas.backend.auth.UserAccount;
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = &quot;products&quot;)
+public class Product {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String name;
+
+    private String description;
+
+    @Column(nullable = false)
+    private String category;
+
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal price;
+
+    private Integer quantity;
+    private String imageUrl;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = &quot;owner_id&quot;)
+    private UserAccount owner;
+
+<span class="fc" id="L36">    @ElementCollection</span>
+    @CollectionTable(name = &quot;product_variations&quot;, joinColumns = @JoinColumn(name = &quot;product_id&quot;))
+    private List&lt;ProductVariation&gt; variations = new ArrayList&lt;&gt;();
+
+<span class="fc" id="L40">    public Product() {}</span>
+
+<span class="fc" id="L42">    public Product(String name, String description, String category, BigDecimal price, Integer quantity, String imageUrl) {</span>
+<span class="fc" id="L43">        this.name = name;</span>
+<span class="fc" id="L44">        this.description = description;</span>
+<span class="fc" id="L45">        this.category = category;</span>
+<span class="fc" id="L46">        this.price = price;</span>
+<span class="fc" id="L47">        this.quantity = quantity;</span>
+<span class="fc" id="L48">        this.imageUrl = imageUrl;</span>
+<span class="fc" id="L49">    }</span>
+
+<span class="fc" id="L51">    public Long getId() { return id; }</span>
+<span class="fc" id="L52">    public String getName() { return name; }</span>
+<span class="fc" id="L53">    public String getDescription() { return description; }</span>
+<span class="fc" id="L54">    public String getCategory() { return category; }</span>
+<span class="fc" id="L55">    public BigDecimal getPrice() { return price; }</span>
+<span class="fc" id="L56">    public Integer getQuantity() { return quantity; }</span>
+<span class="fc" id="L57">    public String getImageUrl() { return imageUrl; }</span>
+<span class="fc" id="L58">    public List&lt;ProductVariation&gt; getVariations() { return variations; }</span>
+<span class="nc" id="L59">    public UserAccount getOwner() { return owner; }</span>
+<span class="nc" id="L60">    public void setName(String name) { this.name = name; }</span>
+<span class="nc" id="L61">    public void setDescription(String description) { this.description = description; }</span>
+<span class="nc" id="L62">    public void setCategory(String category) { this.category = category; }</span>
+<span class="nc" id="L63">    public void setPrice(BigDecimal price) { this.price = price; }</span>
+<span class="nc" id="L64">    public void setQuantity(Integer quantity) { this.quantity = quantity; }</span>
+<span class="nc" id="L65">    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }</span>
+<span class="fc" id="L66">    public void setVariations(List&lt;ProductVariation&gt; variations) { this.variations = variations; }</span>
+<span class="fc" id="L67">    public void setOwner(UserAccount owner) { this.owner = owner; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

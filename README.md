@@ -1,109 +1,129 @@
 # Mãos Conectadas
 
-Sistema web responsivo para cadastro de produtos, consulta de catálogo e controle de estoque, desenvolvido para apoiar artesãos e microempreendedores.
+Sistema web para gestão de produtos, clientes e encomendas de pequenos negócios artesanais, com foco em organização de catálogo, controle de estoque e acompanhamento do fluxo comercial.
 
-### Sobre o projeto
+## Sobre o projeto
 
-O Mãos Conectadas é um projeto desenvolvido no contexto do curso de Análise e Desenvolvimento de Sistemas, com a proposta de facilitar a organização de produtos e o controle de quantidades disponíveis em pequenos negócios artesanais.
+O Mãos Conectadas foi desenvolvido como um projeto acadêmico para apoiar artesãs, artesãos e microempreendedores no controle de produtos, variações de itens, clientes e encomendas. A ideia central é centralizar informações que normalmente ficam dispersas em planilhas, cadernos e mensagens, oferecendo uma aplicação simples, funcional e responsiva.
 
-A solução busca substituir controles manuais e informações dispersas por um ambiente digital simples, permitindo que o usuário cadastre produtos, organize suas variações e acompanhe as quantidades disponíveis em estoque.
+A plataforma permite criar contas independentes por usuário, manter um catálogo de produtos, registrar clientes e acompanhar pedidos pendentes, tudo em um único ambiente.
 
-### Objetivo
-Desenvolver um MVP (Produto Mínimo Viável) funcional, com foco nas operações essenciais de cadastro, consulta e atualização de estoque.
+## Objetivo
 
-### Funcionalidades
-- Autenticação de usuários.
-- Cadastro de produtos com nome, descrição, categoria, preço e foto opcional.
-- Cadastro de variações de produtos, como tamanho e cor.
-- Registro da quantidade disponível por variação.
-- Consulta do catálogo de produtos.
-- Atualização da quantidade de uma variação específica.
-- Agenda de clientes com celular, e-mail, observações, edição e exclusão.
-- Cadastro e consulta de encomendas vinculadas a uma cliente e a um produto, com quantidade, previsão de entrega e status pendente.
-- Pesquisa de produtos pelo nome (funcionalidade desejável).
+Desenvolver um MVP funcional para apoiar as operações essenciais de:
 
-### Tecnologias previstas
+- cadastro de produtos;
+- consulta de catálogo;
+- controle de estoque;
+- gestão de clientes;
+- registro de encomendas.
 
-#### Front-end
+## Funcionalidades
+
+- Autenticação com cadastro e login de usuário.
+- Cadastro e consulta de produtos com nome, descrição, categoria, preço, imagem opcional e quantidade.
+- Cadastro de variações de produtos (como tamanho e cor) com controle individual de quantidade.
+- Pesquisa de produtos por nome.
+- Atualização de estoque de uma variação específica.
+- Gestão de clientes com nome, telefone, e-mail e observações.
+- Edição e exclusão de clientes.
+- Registro de encomendas vinculadas a um cliente e a um produto.
+- Controle de status pendente das encomendas.
+- Acesso isolado por conta de usuário, sem compartilhamento de dados entre contas.
+
+## Stack tecnológica
+
+### Frontend
 - React 19
-- TypeScript 5
+- TypeScript
+- Vite
+- Axios
+- React Router DOM
 
-#### Back-end
+### Backend
 - Java 21
 - Spring Boot 3.5.x
+- Spring Web
 - Spring Data JPA
 - Spring Security
-- Jakarta Bean Validation
-- API REST
+- Spring Validation
+- Spring Actuator
 
-#### Banco de dados
-- PostgreSQL
+### Banco de dados
+- PostgreSQL (produção/recomendado)
+- H2 (desenvolvimento local e testes)
 
-#### Testes
+### Testes
 - JUnit 5
 - Mockito
+- Spring Security Test
+- JaCoCo
 
-### Arquitetura
+## Arquitetura
 
-O projeto utilizará uma arquitetura de monólito em camadas, com separação de responsabilidades:
+O projeto segue uma arquitetura de monólito em camadas:
 
-- Controller: recebe e encaminha as requisições da API.
-- Service: concentra as regras de negócio.
-- Repository: realiza o acesso e a persistência dos dados.
-- Front-end: apresenta a interface e realiza a comunicação com a API REST.
-- Banco de dados: armazena usuários, produtos e suas variações.
+- Frontend: interface web para navegação, formulários e consumo da API.
+- Controller: expõe endpoints REST e valida entrada HTTP.
+- Service: centraliza regras de negócio e coordena as operações.
+- Repository: acesso e persistência dos dados via Spring Data JPA.
+- Banco de dados: armazenamento principal dos dados da aplicação.
 
-### Práticas de engenharia de software
+## Estrutura do repositório
 
-Durante o desenvolvimento, serão aplicadas práticas de:
+- `backend/`: API REST em Spring Boot.
+- `frontend/`: aplicação web em React + TypeScript.
+- `docs/`: documentação de requisitos, arquitetura e validação.
+- `docker-compose.yml`: configuração local do PostgreSQL.
+- `.github/workflows/ci.yml`: pipeline de integração contínua.
 
-- Controle de versão com Git e GitHub.
-- Organização do código por branches.
-- Commits semânticos utilizando Conventional Commits.
-- Pull requests e revisão de código.
-- Testes automatizados unitários e de integração.
-- Integração contínua (CI) para execução automatizada de verificações.
-- Registro de melhorias e ajustes identificados durante as validações.
+## Requisitos
 
-### Etapas de desenvolvimento — Experiência Prática III
+### Pré-requisitos
 
-1. Configuração do repositório: organização do GitHub, documentação inicial e estrutura do projeto.
-2. Implementação: desenvolvimento do front-end, back-end e integração com o banco de dados.
-3. Controle de versão: utilização de branches, commits semânticos e pull requests.
-4. Qualidade de software: criação de testes automatizados e configuração da pipeline de integração contínua.
-5. Validação externa: realização de duas rodadas de avaliação com representantes da comunidade.
-6. Melhorias: análise dos feedbacks, registro dos resultados e implementação de ajustes no sistema.
+- Java 21+
+- Maven (ou uso do wrapper do projeto)
+- Node.js 20+
+- npm
+- Docker (opcional, mas recomendado para PostgreSQL)
 
-### Público-alvo
+### Acesso e regras de negócio
 
-Artesãos e microempreendedores que precisam organizar seus produtos e acompanhar as quantidades disponíveis, especialmente aqueles que trabalham com peças artesanais, crochê, costura e produtos personalizados.
+Ao iniciar a aplicação, o usuário precisa criar uma conta com nome, celular, e-mail e senha. As senhas são armazenadas com hash e cada conta acessa apenas seus próprios produtos, clientes e encomendas.
 
-### Impacto esperado
+Produtos que não possuem conta associada não são exibidos para evitar compartilhamento entre usuários.
 
-O projeto busca contribuir para a organização das atividades produtivas e apoiar o empreendedorismo de pequenos negócios, relacionando-se ao ODS 8 — Trabalho Decente e Crescimento Econômico, especialmente à Meta 8.3.
-
-
-### Status do projeto
-<escape>🚧</escape> Em desenvolvimento — Experiência Prática III.
-
-As funcionalidades, os testes, a integração contínua e as validações serão documentados à medida que forem implementados e realizados.
-Projeto acadêmico — Análise e Desenvolvimento de Sistemas.
+Encomendas são registradas como pendentes e não alteram o estoque automaticamente.
 
 ## Executando o projeto
 
-Ao abrir o sistema, crie uma conta com nome, celular, e-mail e senha. As senhas são armazenadas com hash e cada conta acessa apenas os próprios produtos, clientes e encomendas. Produtos preexistentes sem uma conta associada não são exibidos para evitar compartilhamento entre usuários. Encomendas são registradas como pendentes e não alteram o estoque automaticamente.
+### 1) Clonando o repositório
 
-### Backend
+```powershell
+git clone <url-do-repositorio>
+cd Maos-Conectadas
+```
+
+### 2) Backend
+
+#### Opção A: usar H2 (padrão)
 
 ```powershell
 cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-Por padrão, o backend usa H2 em arquivo (`backend/maos.mv.db`), preservando contas e produtos entre reinicializações. Para PostgreSQL:
+Esse modo usa H2 em arquivo e mantém dados entre reinicializações. O banco será salvo localmente dentro da pasta `backend`.
+
+#### Opção B: usar PostgreSQL via Docker
 
 ```powershell
 docker compose up -d postgres
+```
+
+Em seguida:
+
+```powershell
 $env:DATABASE_URL="jdbc:postgresql://localhost:5432/maos_conectadas"
 $env:DATABASE_USERNAME="maos"
 $env:DATABASE_PASSWORD="maos"
@@ -111,21 +131,78 @@ cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-### Frontend
+Observação: a aplicação também aceita as variáveis `CORS_ALLOWED_ORIGIN` e outras configurações definidas em `application.properties`.
+
+### 3) Frontend
+
+No diretório do frontend:
 
 ```powershell
 cd frontend
 npm install
-npm run dev
+npm run dev -- --host 0.0.0.0
 ```
 
-O frontend fica disponível em `http://localhost:5173`. As chamadas `/api` são encaminhadas pelo Vite para `http://localhost:8080`, evitando que o navegador dependa do endereço `localhost` para acessar o backend.
+A interface estará disponível em:
 
-Para usar outro endereço de backend no desenvolvimento, defina `VITE_BACKEND_URL` antes de iniciar o frontend. Para apontar o cliente diretamente a uma API, também é possível definir `VITE_API_URL` com a URL base da API.
+- `http://localhost:5173`
 
-## Estrutura
+O Vite configura um proxy para `/api`, encaminhando as requisições para o backend em `http://localhost:8080` por padrão.
 
-- `backend/`: API REST com Spring Boot.
-- `frontend/`: interface web com React e TypeScript.
-- `docs/`: arquitetura, requisitos, validação e evidências.
-- `.github/workflows/ci.yml`: execução de testes, lint e build.
+Se desejar apontar para outro backend em desenvolvimento, defina a variável de ambiente antes de iniciar o frontend:
+
+```powershell
+$env:VITE_BACKEND_URL="http://localhost:8080"
+```
+
+Também é possível definir a URL do backend diretamente para o cliente:
+
+```powershell
+$env:VITE_API_URL="http://localhost:8080"
+```
+
+## Banco de dados local
+
+A configuração do PostgreSQL está em `docker-compose.yml`:
+
+```yaml
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: maos_conectadas
+      POSTGRES_USER: maos
+      POSTGRES_PASSWORD: maos
+    ports:
+      - "5432:5432"
+```
+
+## Fluxo principal da aplicação
+
+O sistema oferece os seguintes módulos principais:
+
+- Cadastro e autenticação de usuários
+- Catálogo de produtos
+- Cadastro de novos itens e variações
+- Atualização de estoque
+- Cadastro de clientes
+- Registro de encomendas
+- Consulta do histórico comercial do usuário
+
+## Validação e qualidade
+
+O projeto já conta com estrutura para testes automatizados e cobertura com JaCoCo. A integração contínua está configurada em:
+
+- `.github/workflows/ci.yml`
+
+## Documentação adicional
+
+- `docs/requisitos.md`: requisitos funcionais e não funcionais.
+- `docs/arquitetura.md`: visão da arquitetura e endpoints principais.
+- `frontend/README.md`: documentação específica do front-end.
+
+## Status do projeto
+
+Em desenvolvimento, com foco em entrega de um MVP funcional para gestão de estoque e pedidos em negócios artesanais.
+
+Projeto acadêmico de Análise e Desenvolvimento de Sistemas.
