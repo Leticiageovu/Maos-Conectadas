@@ -3,10 +3,10 @@ services:
     image: postgres:17
     environment:
       POSTGRES_DB: maos_conectadas
-      POSTGRES_USER: maos
-      POSTGRES_PASSWORD: maos
+      POSTGRES_USER: *******
+      POSTGRES_PASSWORD: *******
     ports:
-      - "5432:5432"
+      
     volumes:
       - maos-postgres:/var/lib/postgresql/data
 
