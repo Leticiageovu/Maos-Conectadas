@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import axios from 'axios'
@@ -32,6 +33,52 @@ type UserProfile = { name: string; phone: string; email: string }
 type AuthMode = 'login' | 'register'
 type Page = 'clients' | 'catalog' | 'products' | 'orders' | 'stock'
 
+type AccessibilityControlsProps = {
+  darkMode: boolean
+  onToggleTheme: () => void
+  onIncreaseFont: () => void
+  onDecreaseFont: () => void
+}
+
+function AccessibilityControls({
+  darkMode,
+  onToggleTheme,
+  onIncreaseFont,
+  onDecreaseFont,
+}: AccessibilityControlsProps) {
+  return (
+    <div className="accessibility-controls" role="group" aria-label="Opções de acessibilidade">
+      <button
+        type="button"
+        onClick={onDecreaseFont}
+        aria-label="Diminuir tamanho do texto"
+        title="Diminuir tamanho do texto"
+      >
+        A−
+      </button>
+
+      <button
+        type="button"
+        onClick={onIncreaseFont}
+        aria-label="Aumentar tamanho do texto"
+        title="Aumentar tamanho do texto"
+      >
+        A+
+      </button>
+
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        aria-label={darkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
+        title={darkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
+      >
+        <span aria-hidden="true">{darkMode ? '☀️' : '🌙'}</span>
+        <span>{darkMode ? 'Modo claro' : 'Modo escuro'}</span>
+      </button>
+    </div>
+  )
+}
+
 const navigationItems: { id: Page; label: string }[] = [
   { id: 'clients', label: 'Clientes' },
   { id: 'catalog', label: 'Consultar catálogo' },
@@ -45,6 +92,48 @@ const api = axios.create({
 })
 
 function App() {
+  // Preferências de acessibilidade
+  const [darkMode, setDarkMode] = useState(
+    () => localStorage.getItem('mc-theme') === 'dark',
+  )
+
+  const [fontScale, setFontScale] = useState(() => {
+    const savedScale = Number(localStorage.getItem('mc-font-scale'))
+
+    return savedScale >= 0.8 && savedScale <= 1.4
+      ? savedScale
+      : 1
+  })
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light'
+    localStorage.setItem('mc-theme', darkMode ? 'dark' : 'light')
+  }, [darkMode])
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--font-scale',
+      String(fontScale),
+    )
+    localStorage.setItem('mc-font-scale', String(fontScale))
+  }, [fontScale])
+
+  function increaseFontSize() {
+    setFontScale((current) =>
+      Math.min(1.4, Number((current + 0.1).toFixed(1))),
+    )
+  }
+
+  function decreaseFontSize() {
+    setFontScale((current) =>
+      Math.max(0.8, Number((current - 0.1).toFixed(1))),
+    )
+  }
+
+  function toggleTheme() {
+    setDarkMode((current) => !current)
+  }
+
   const [page, setPage] = useState<Page>('products')
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -425,12 +514,29 @@ function App() {
   const selectedStockVariation = stockVariations[selectedStockVariationIndex]
 
   if (authLoading) {
-    return <main className="auth-shell"><p className="auth-loading">Carregando...</p></main>
+    return (
+      <main className="auth-shell">
+        <AccessibilityControls
+          darkMode={darkMode}
+          onToggleTheme={toggleTheme}
+          onIncreaseFont={increaseFontSize}
+          onDecreaseFont={decreaseFontSize}
+        />
+        <p className="auth-loading">Carregando...</p>
+      </main>
+    )
   }
 
   if (!user) {
     return (
       <main className="auth-shell">
+        <AccessibilityControls
+          darkMode={darkMode}
+          onToggleTheme={toggleTheme}
+          onIncreaseFont={increaseFontSize}
+          onDecreaseFont={decreaseFontSize}
+        />
+
         <section className="auth-card">
           <div className="auth-logo-wrap">
             <img
@@ -534,6 +640,13 @@ function App() {
 
   return (
     <main className="app-shell">
+      <AccessibilityControls
+        darkMode={darkMode}
+        onToggleTheme={toggleTheme}
+        onIncreaseFont={increaseFontSize}
+        onDecreaseFont={decreaseFontSize}
+      />
+
       <header className="topbar">
         <h1 className="brand">MÃOS CONECTADAS</h1>
         {page !== 'stock' && <div className="menu-container">
@@ -581,7 +694,7 @@ function App() {
         {page === 'orders' && <p>Cadastre e acompanhe as encomendas feitas pelas clientes.</p>}
       </section>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
       {successMessage && <p className="success-message" role="status">{successMessage}</p>}
 
       {page === 'products' && (
