@@ -29,6 +29,7 @@ Desenvolver um MVP funcional para apoiar as operações essenciais de:
 - Edição e exclusão de clientes.
 - Registro de encomendas vinculadas a um cliente e a um produto.
 - Controle de status pendente das encomendas.
+- Registro de vendas com baixa automática do estoque e histórico por conta.
 - Acesso isolado por conta de usuário, sem compartilhamento de dados entre contas.
 
 ## Stack tecnológica
@@ -187,6 +188,7 @@ O sistema oferece os seguintes módulos principais:
 - Atualização de estoque
 - Cadastro de clientes
 - Registro de encomendas
+- Registro e histórico de vendas
 - Consulta do histórico comercial do usuário
 
 ## Validação e qualidade

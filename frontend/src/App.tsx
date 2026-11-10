@@ -29,9 +29,19 @@ type CustomerOrder = {
   status: 'PENDENTE'
 }
 
+type SaleRecord = {
+  id: number
+  productName: string
+  variationLabel: string
+  quantity: number
+  unitPrice: number
+  totalPrice: number
+  soldAt: string
+}
+
 type UserProfile = { name: string; phone: string; email: string }
 type AuthMode = 'login' | 'register'
-type Page = 'clients' | 'catalog' | 'products' | 'orders' | 'stock'
+type Page = 'clients' | 'catalog' | 'products' | 'orders' | 'stock' | 'sale' | 'sales'
 
 type AccessibilityControlsProps = {
   darkMode: boolean
@@ -48,25 +58,28 @@ function AccessibilityControls({
 }: AccessibilityControlsProps) {
   return (
     <div className="accessibility-controls" role="group" aria-label="Opções de acessibilidade">
-      <button
-        type="button"
-        onClick={onDecreaseFont}
-        aria-label="Diminuir tamanho do texto"
-        title="Diminuir tamanho do texto"
-      >
-        A−
-      </button>
+      <div className="font-size-controls">
+        <button
+          type="button"
+          onClick={onDecreaseFont}
+          aria-label="Diminuir tamanho do texto"
+          title="Diminuir tamanho do texto"
+        >
+          A−
+        </button>
+
+        <button
+          type="button"
+          onClick={onIncreaseFont}
+          aria-label="Aumentar tamanho do texto"
+          title="Aumentar tamanho do texto"
+        >
+          A+
+        </button>
+      </div>
 
       <button
-        type="button"
-        onClick={onIncreaseFont}
-        aria-label="Aumentar tamanho do texto"
-        title="Aumentar tamanho do texto"
-      >
-        A+
-      </button>
-
-      <button
+        className="theme-toggle-button"
         type="button"
         onClick={onToggleTheme}
         aria-label={darkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
@@ -84,6 +97,7 @@ const navigationItems: { id: Page; label: string }[] = [
   { id: 'catalog', label: 'Consultar catálogo' },
   { id: 'products', label: 'Cadastrar produto' },
   { id: 'orders', label: 'Encomendas' },
+  { id: 'sales', label: 'Vendas' },
 ]
 
 const api = axios.create({
@@ -148,6 +162,7 @@ function App() {
   const [products, setProducts] = useState<Product[]>([])
   const [clients, setClients] = useState<Client[]>([])
   const [orders, setOrders] = useState<CustomerOrder[]>([])
+  const [sales, setSales] = useState<SaleRecord[]>([])
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [saving, setSaving] = useState(false)
@@ -165,6 +180,8 @@ function App() {
   const [newStockQuantity, setNewStockQuantity] = useState('')
   const [savingStock, setSavingStock] = useState(false)
   const [stockUpdated, setStockUpdated] = useState(false)
+  const [saleQuantity, setSaleQuantity] = useState('1')
+  const [savingSale, setSavingSale] = useState(false)
   const [form, setForm] = useState({
     name: '', description: '', category: '', price: '', imageUrl: '',
   })
@@ -206,6 +223,15 @@ function App() {
     }
   }
 
+  async function loadSales() {
+    try {
+      const response = await api.get<SaleRecord[]>('/sales')
+      setSales(response.data)
+    } catch {
+      setError('Não foi possível carregar as vendas. Tente novamente.')
+    }
+  }
+
   async function refreshCsrfToken() {
     const response = await api.get<{ token: string }>('/auth/csrf')
     api.defaults.headers.common['X-CSRF-TOKEN'] = response.data.token
@@ -243,6 +269,7 @@ function App() {
       void loadClients()
       void loadOrders()
     }
+    if (nextPage === 'sales') void loadSales()
   }
 
   function startClientEdit(client: Client) {
@@ -445,6 +472,7 @@ function App() {
       setProducts([])
       setClients([])
       setOrders([])
+      setSales([])
       setPage('products')
       setMenuOpen(false)
       setAuthForm({ name: '', phone: '', email: '', password: '', confirmPassword: '' })
@@ -467,6 +495,58 @@ function App() {
     setStockUpdated(false)
     setPage('stock')
     setError('')
+  }
+
+  function startSale() {
+    const product = products.find((item) => item.id === selectedProductId)
+    if (!product) return
+
+    const currentVariations = product.variations?.length
+      ? product.variations.map((item) => ({ ...item }))
+      : [{ size: 'Único', color: product.category, quantity: product.quantity }]
+    setStockVariations(currentVariations)
+    setSelectedStockVariationIndex(0)
+    setSaleQuantity('1')
+    setPage('sale')
+    setMenuOpen(false)
+    setError('')
+    setSuccessMessage('')
+  }
+
+  async function saveSale(event: FormEvent) {
+    event.preventDefault()
+    const product = products.find((item) => item.id === selectedProductId)
+    const currentVariation = stockVariations[selectedStockVariationIndex]
+    const quantity = Number(saleQuantity)
+    if (!product || !currentVariation || !Number.isInteger(quantity) || quantity < 1) {
+      setError('Informe uma quantidade inteira maior que zero.')
+      return
+    }
+    if (quantity > currentVariation.quantity) {
+      setError('A quantidade informada é maior que o estoque disponível.')
+      return
+    }
+
+    setSavingSale(true)
+    setError('')
+    try {
+      await api.post('/sales', {
+        productId: product.id,
+        variationIndex: selectedStockVariationIndex,
+        quantity,
+      })
+      await Promise.all([loadProducts(), loadSales()])
+      setPage('sales')
+      setSelectedProductId(null)
+      setSuccessMessage('Venda registrada com sucesso.')
+    } catch (requestError) {
+      const detail = axios.isAxiosError<{ detail?: string }>(requestError)
+        ? requestError.response?.data?.detail
+        : undefined
+      setError(detail ?? 'Não foi possível registrar a venda. Tente novamente.')
+    } finally {
+      setSavingSale(false)
+    }
   }
 
   async function updateStock(event: FormEvent) {
@@ -649,7 +729,7 @@ function App() {
 
       <header className="topbar">
         <h1 className="brand">MÃOS CONECTADAS</h1>
-        {page !== 'stock' && <div className="menu-container">
+        {page !== 'stock' && page !== 'sale' && <div className="menu-container">
           <button
             className="menu-toggle"
             type="button"
@@ -687,9 +767,12 @@ function App() {
       <section className="page-heading">
         <h2>{page === 'stock'
           ? 'Atualizar estoque'
-          : navigationItems.find((item) => item.id === page)?.label}</h2>
+          : page === 'sale'
+            ? 'Registrar venda'
+            : navigationItems.find((item) => item.id === page)?.label}</h2>
         {page === 'products' && <p>Preencha os dados para adicionar ao catálogo.</p>}
         {page === 'stock' && <p>Altere a quantidade de uma variação do produto.</p>}
+        {page === 'sale' && <p>Informe a quantidade vendida para atualizar o estoque e registrar a venda.</p>}
         {page === 'clients' && <p>Organize seus contatos e anotações sobre cada cliente.</p>}
         {page === 'orders' && <p>Cadastre e acompanhe as encomendas feitas pelas clientes.</p>}
       </section>
@@ -808,14 +891,24 @@ function App() {
               </article>
             ))}
           </div>
-          <button
-            className="save-button stock-update-button"
-            type="button"
-            disabled={selectedProductId === null || savingStock}
-            onClick={startStockUpdate}
-          >
-            Atualizar Estoque
-          </button>
+          <div className="catalog-actions">
+            <button
+              className="save-button stock-update-button"
+              type="button"
+              disabled={selectedProductId === null || savingStock}
+              onClick={startStockUpdate}
+            >
+              Atualizar Estoque
+            </button>
+            <button
+              className="save-button sell-button"
+              type="button"
+              disabled={selectedProductId === null || savingSale}
+              onClick={startSale}
+            >
+              Vender
+            </button>
+          </div>
         </div>
       )}
 
@@ -899,6 +992,108 @@ function App() {
           <button className="back-to-catalog" type="button" onClick={returnToCatalog}>
             ← Voltar ao catálogo
           </button>
+        </section>
+      )}
+
+      {page === 'sale' && selectedProduct && selectedStockVariation && (
+        <section className="stock-page">
+          <div className="stock-product-card">
+            <p className="stock-eyebrow">PRODUTO SELECIONADO</p>
+            <h3>{selectedProduct.name}</h3>
+            <p className="stock-product-meta">
+              Categoria: {selectedProduct.category} · {new Intl.NumberFormat('pt-BR', {
+                style: 'currency', currency: 'BRL',
+              }).format(selectedProduct.price)}
+            </p>
+            <div className="stock-variation">
+              <h4>Variação</h4>
+              {stockVariations.length > 1 ? (
+                <select
+                  aria-label="Variação do produto"
+                  value={selectedStockVariationIndex}
+                  onChange={(event) => {
+                    setSelectedStockVariationIndex(Number(event.target.value))
+                    setError('')
+                  }}
+                >
+                  {stockVariations.map((item, index) => (
+                    <option key={`${item.size}-${item.color}-${index}`} value={index}>
+                      Tamanho {item.size} / {item.color}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p>Tamanho {selectedStockVariation.size} / {selectedStockVariation.color}</p>
+              )}
+            </div>
+          </div>
+
+          <form className="stock-form" onSubmit={saveSale}>
+            <div className="stock-current">
+              <span>Disponível em estoque</span>
+              <strong>{selectedStockVariation.quantity} unidades</strong>
+            </div>
+            <label htmlFor="sale-quantity">Quantidade vendida</label>
+            <input
+              id="sale-quantity"
+              min="1"
+              max={selectedStockVariation.quantity}
+              required
+              step="1"
+              type="number"
+              value={saleQuantity}
+              onChange={(event) => {
+                setSaleQuantity(event.target.value)
+                setError('')
+              }}
+            />
+            <p className="stock-hint">O estoque será reduzido ao confirmar a venda.</p>
+            <button className="save-button" type="submit" disabled={savingSale || selectedStockVariation.quantity < 1}>
+              {savingSale ? 'Registrando...' : 'Vendido'}
+            </button>
+          </form>
+
+          <button className="back-to-catalog" type="button" onClick={returnToCatalog}>
+            ← Voltar ao catálogo
+          </button>
+        </section>
+      )}
+
+      {page === 'sales' && (
+        <section className="feature-page">
+          <div className="client-section">
+            <div className="section-heading">
+              <h3>Vendas registradas</h3>
+              <span>{sales.length} vendas</span>
+            </div>
+            {sales.length === 0 ? (
+              <p className="empty-state">Ainda não há vendas registradas.</p>
+            ) : (
+              <div className="sales-list">
+                {sales.map((sale) => (
+                  <article className="sale-card" key={sale.id}>
+                    <div className="client-card-heading">
+                      <h4>{sale.productName}</h4>
+                      <strong>{new Intl.NumberFormat('pt-BR', {
+                        style: 'currency', currency: 'BRL',
+                      }).format(sale.totalPrice)}</strong>
+                    </div>
+                    <p className="client-contact">{sale.variationLabel} · Quantidade: {sale.quantity}</p>
+                    <p className="client-contact">
+                      Vendido em {new Intl.DateTimeFormat('pt-BR', {
+                        dateStyle: 'medium', timeStyle: 'short',
+                      }).format(new Date(sale.soldAt))}
+                    </p>
+                    <p className="client-contact">
+                      Preço unitário: {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency', currency: 'BRL',
+                      }).format(sale.unitPrice)}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
         </section>
       )}
 

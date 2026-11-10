@@ -32,6 +32,41 @@ button:disabled {
   opacity: 0.65;
 }
 
+.accessibility-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  gap: clamp(4px, 2vw, 20px);
+}
+
+.font-size-controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: clamp(4px, 1vw, 8px);
+}
+
+.font-size-controls button {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.theme-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+  gap: clamp(2px, 0.8vw, 6px);
+  min-width: 0;
+  max-width: 100%;
+  height: 40px;
+  padding: 0 clamp(6px, 1.5vw, 12px);
+  white-space: nowrap;
+}
+
 /* ==========================================
    CABEÇALHO E NAVEGAÇÃO
 ========================================== */
@@ -567,9 +602,20 @@ button:disabled {
   font-size: calc(11px * var(--font-scale, 1));
 }
 
-.stock-update-button {
-  width: 100%;
+.catalog-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
   margin-top: 14px;
+}
+
+.catalog-actions .stock-update-button,
+.catalog-actions .sell-button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0;
+  padding: 0 10px;
+  overflow-wrap: anywhere;
 }
 
 .back-to-catalog {
@@ -610,13 +656,15 @@ button:disabled {
 }
 
 .client-list,
-.order-list {
+.order-list,
+.sales-list {
   display: grid;
   gap: 12px;
 }
 
 .client-card,
-.order-card {
+.order-card,
+.sale-card {
   min-width: 0;
   padding: 17px;
   border: 1px solid #e5ddd6;
@@ -637,6 +685,12 @@ button:disabled {
   color: #30251f;
   font-size: calc(16px * var(--font-scale, 1));
   overflow-wrap: anywhere;
+}
+
+.sale-card .client-card-heading strong {
+  flex: 0 0 auto;
+  color: var(--color-primary);
+  font-size: calc(14px * var(--font-scale, 1));
 }
 
 .client-card-heading a {
@@ -700,13 +754,13 @@ button:disabled {
 ========================================== */
 
 .auth-shell {
-  display: flex;
   width: 100%;
-  max-width: 430px;
   min-height: 100vh;
-  flex-direction: column;
-  justify-content: center;
-  padding: 28px 18px 60px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  align-items: center;
+  padding: 28px 20px 60px;
   margin-inline: auto;
 }
 
@@ -867,7 +921,8 @@ button:disabled {
   }
 
   .client-list,
-  .order-list {
+  .order-list,
+  .sales-list {
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   }
 
@@ -1157,7 +1212,8 @@ button:disabled {
   }
 
   .client-card,
-  .order-card {
+  .order-card,
+  .sale-card {
     padding: 15px;
   }
 
@@ -1339,6 +1395,7 @@ button:disabled {
 :root[data-theme='dark'] .stock-form,
 :root[data-theme='dark'] .client-card,
 :root[data-theme='dark'] .order-card,
+:root[data-theme='dark'] .sale-card,
 :root[data-theme='dark'] .coming-soon,
 :root[data-theme='dark'] .auth-card {
   background: var(--color-surface);

@@ -26,3 +26,9 @@ C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\m
 C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\product\ProductService.java
 C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\product\ProductVariation.java
 C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\product\VariationRequest.java
+C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\sale\Sale.java
+C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\sale\SaleController.java
+C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\sale\SaleRepository.java
+C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\sale\SaleRequest.java
+C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\sale\SaleResponse.java
+C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\sale\SaleService.java
