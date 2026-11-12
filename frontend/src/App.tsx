@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import axios from 'axios'
@@ -15,15 +16,90 @@ type Product = {
   variations?: Variation[]
 }
 
+type Client = { id: number; name: string; phone: string; email?: string; notes?: string }
+type CustomerOrder = {
+  id: number
+  clientId: number
+  clientName: string
+  productId: number
+  productName: string
+  quantity: number
+  expectedDate: string
+  notes?: string
+  status: 'PENDENTE'
+}
+
+type SaleRecord = {
+  id: number
+  productName: string
+  variationLabel: string
+  quantity: number
+  unitPrice: number
+  totalPrice: number
+  soldAt: string
+}
+
 type UserProfile = { name: string; phone: string; email: string }
 type AuthMode = 'login' | 'register'
-type Page = 'clients' | 'catalog' | 'products' | 'orders' | 'stock'
+type Page = 'dashboard' | 'clients' | 'catalog' | 'products' | 'orders' | 'stock' | 'sale' | 'sales' | 'notes'
+
+type AccessibilityControlsProps = {
+  darkMode: boolean
+  onToggleTheme: () => void
+  onIncreaseFont: () => void
+  onDecreaseFont: () => void
+}
+
+function AccessibilityControls({
+  darkMode,
+  onToggleTheme,
+  onIncreaseFont,
+  onDecreaseFont,
+}: AccessibilityControlsProps) {
+  return (
+    <div className="accessibility-controls" role="group" aria-label="Opções de acessibilidade">
+      <div className="font-size-controls">
+        <button
+          type="button"
+          onClick={onDecreaseFont}
+          aria-label="Diminuir tamanho do texto"
+          title="Diminuir tamanho do texto"
+        >
+          A−
+        </button>
+
+        <button
+          type="button"
+          onClick={onIncreaseFont}
+          aria-label="Aumentar tamanho do texto"
+          title="Aumentar tamanho do texto"
+        >
+          A+
+        </button>
+      </div>
+
+      <button
+        className="theme-toggle-button"
+        type="button"
+        onClick={onToggleTheme}
+        aria-label={darkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
+        title={darkMode ? 'Ativar modo claro' : 'Ativar modo escuro'}
+      >
+        <span aria-hidden="true">{darkMode ? '☀️' : '🌙'}</span>
+        <span>{darkMode ? 'Modo claro' : 'Modo escuro'}</span>
+      </button>
+    </div>
+  )
+}
 
 const navigationItems: { id: Page; label: string }[] = [
+  { id: 'dashboard', label: 'Início' },
   { id: 'clients', label: 'Clientes' },
   { id: 'catalog', label: 'Consultar catálogo' },
   { id: 'products', label: 'Cadastrar produto' },
   { id: 'orders', label: 'Encomendas' },
+  { id: 'sales', label: 'Vendas' },
+  { id: 'notes', label: 'Lembretes' },
 ]
 
 const api = axios.create({
@@ -31,8 +107,79 @@ const api = axios.create({
   withCredentials: true,
 })
 
+function formatToday(date: Date) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
+}
+
+function FooterBar() {
+  const [today, setToday] = useState(() => new Date())
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setToday(new Date())
+    }, 60000)
+
+    return () => window.clearInterval(intervalId)
+  }, [])
+
+  return (
+    <footer className="app-footer">
+      <span className="footer-date">{formatToday(today)}</span>
+      <span className="footer-brand">Mãos Conectadas</span>
+      <span className="footer-author">Letícia Geovú</span>
+    </footer>
+  )
+}
+
 function App() {
-  const [page, setPage] = useState<Page>('products')
+  // Preferências de acessibilidade
+  const [darkMode, setDarkMode] = useState(
+    () => localStorage.getItem('mc-theme') === 'dark',
+  )
+
+  const [fontScale, setFontScale] = useState(() => {
+    const savedScale = Number(localStorage.getItem('mc-font-scale'))
+
+    return savedScale >= 0.8 && savedScale <= 1.4
+      ? savedScale
+      : 1
+  })
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light'
+    localStorage.setItem('mc-theme', darkMode ? 'dark' : 'light')
+  }, [darkMode])
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--font-scale',
+      String(fontScale),
+    )
+    localStorage.setItem('mc-font-scale', String(fontScale))
+  }, [fontScale])
+
+  function increaseFontSize() {
+    setFontScale((current) =>
+      Math.min(1.4, Number((current + 0.1).toFixed(1))),
+    )
+  }
+
+  function decreaseFontSize() {
+    setFontScale((current) =>
+      Math.max(0.8, Number((current - 0.1).toFixed(1))),
+    )
+  }
+
+  function toggleTheme() {
+    setDarkMode((current) => !current)
+  }
+
+  const [page, setPage] = useState<Page>('dashboard')
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -44,14 +191,31 @@ function App() {
     name: '', phone: '', email: '', password: '', confirmPassword: '',
   })
   const [products, setProducts] = useState<Product[]>([])
+  const [clients, setClients] = useState<Client[]>([])
+  const [orders, setOrders] = useState<CustomerOrder[]>([])
+  const [sales, setSales] = useState<SaleRecord[]>([])
+  const [dashboardNotes, setDashboardNotes] = useState('')
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [saving, setSaving] = useState(false)
+  const [deletingProductId, setDeletingProductId] = useState<number | null>(null)
+  const [savingClient, setSavingClient] = useState(false)
+  const [savingOrder, setSavingOrder] = useState(false)
+  const [editingClientId, setEditingClientId] = useState<number | null>(null)
+  const [clientForm, setClientForm] = useState({ name: '', phone: '', email: '', notes: '' })
+  const [orderForm, setOrderForm] = useState({
+    clientId: '', productId: '', quantity: '1', expectedDate: '', notes: '',
+  })
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
   const [stockVariations, setStockVariations] = useState<Variation[]>([])
   const [selectedStockVariationIndex, setSelectedStockVariationIndex] = useState(0)
   const [newStockQuantity, setNewStockQuantity] = useState('')
   const [savingStock, setSavingStock] = useState(false)
   const [stockUpdated, setStockUpdated] = useState(false)
+  const [saleQuantity, setSaleQuantity] = useState('1')
+  const [savingSale, setSavingSale] = useState(false)
+  const [savingDashboardNotes, setSavingDashboardNotes] = useState(false)
+  const [editingDashboardNotes, setEditingDashboardNotes] = useState(false)
   const [form, setForm] = useState({
     name: '', description: '', category: '', price: '', imageUrl: '',
   })
@@ -75,6 +239,52 @@ function App() {
     }
   }
 
+  async function loadClients() {
+    try {
+      const response = await api.get<Client[]>('/clients')
+      setClients(response.data)
+    } catch {
+      setError('Não foi possível carregar as clientes. Tente novamente.')
+    }
+  }
+
+  async function loadOrders() {
+    try {
+      const response = await api.get<CustomerOrder[]>('/orders')
+      setOrders(response.data)
+    } catch {
+      setError('Não foi possível carregar as encomendas. Tente novamente.')
+    }
+  }
+
+  async function loadSales() {
+    try {
+      const response = await api.get<SaleRecord[]>('/sales')
+      setSales(response.data)
+    } catch {
+      setError('Não foi possível carregar as vendas. Tente novamente.')
+    }
+  }
+
+  async function loadDashboardNotes() {
+    try {
+      const response = await api.get<{ notes: string }>('/dashboard/notes')
+      setDashboardNotes(response.data.notes)
+    } catch {
+      setError('Não foi possível carregar os lembretes do painel. Tente novamente.')
+    }
+  }
+
+  async function loadDashboardData() {
+    await Promise.all([
+      loadProducts(),
+      loadClients(),
+      loadOrders(),
+      loadSales(),
+      loadDashboardNotes(),
+    ])
+  }
+
   async function refreshCsrfToken() {
     const response = await api.get<{ token: string }>('/auth/csrf')
     api.defaults.headers.common['X-CSRF-TOKEN'] = response.data.token
@@ -86,7 +296,7 @@ function App() {
         await refreshCsrfToken()
         const response = await api.get<UserProfile>('/auth/me')
         setUser(response.data)
-        await loadProducts()
+        await loadDashboardData()
       } catch (requestError) {
         if (axios.isAxiosError(requestError) && requestError.response?.status === 401) {
           setUser(null)
@@ -105,7 +315,177 @@ function App() {
     setPage(nextPage)
     setMenuOpen(false)
     setError('')
+    setSuccessMessage('')
     setSelectedProductId(null)
+    if (nextPage === 'clients') void loadClients()
+    if (nextPage === 'dashboard') void loadDashboardData()
+    if (nextPage === 'orders') {
+      void loadClients()
+      void loadOrders()
+    }
+    if (nextPage === 'sales') void loadSales()
+    if (nextPage === 'notes') {
+      setEditingDashboardNotes(false)
+      void loadDashboardNotes()
+    }
+  }
+
+  function openDashboardNotes() {
+    setPage('notes')
+    setMenuOpen(false)
+    setError('')
+    setSuccessMessage('')
+    setEditingDashboardNotes(false)
+    void loadDashboardNotes()
+  }
+
+  async function saveDashboardNotes(event: FormEvent) {
+    event.preventDefault()
+    setSavingDashboardNotes(true)
+    setError('')
+    setSuccessMessage('')
+    try {
+      const response = await api.put<{ notes: string }>('/dashboard/notes', {
+        notes: dashboardNotes,
+      })
+      setDashboardNotes(response.data.notes)
+      setEditingDashboardNotes(false)
+      setSuccessMessage('Lembretes salvos com sucesso.')
+    } catch {
+      setError('Não foi possível salvar os lembretes. Tente novamente.')
+    } finally {
+      setSavingDashboardNotes(false)
+    }
+  }
+
+  async function deleteDashboardNotes() {
+    if (!window.confirm('Deseja excluir todos os lembretes salvos?')) return
+
+    setSavingDashboardNotes(true)
+    setError('')
+    setSuccessMessage('')
+    try {
+      await api.delete('/dashboard/notes')
+      setDashboardNotes('')
+      setEditingDashboardNotes(false)
+      setSuccessMessage('Lembretes excluídos com sucesso.')
+    } catch {
+      setError('Não foi possível excluir os lembretes. Tente novamente.')
+    } finally {
+      setSavingDashboardNotes(false)
+    }
+  }
+
+  function startClientEdit(client: Client) {
+    setEditingClientId(client.id)
+    setClientForm({
+      name: client.name,
+      phone: client.phone,
+      email: client.email ?? '',
+      notes: client.notes ?? '',
+    })
+    setError('')
+  }
+
+  function cancelClientEdit() {
+    setEditingClientId(null)
+    setClientForm({ name: '', phone: '', email: '', notes: '' })
+  }
+
+  async function saveClient(event: FormEvent) {
+    event.preventDefault()
+    setSavingClient(true)
+    setError('')
+    try {
+      if (editingClientId === null) {
+        await api.post('/clients', clientForm)
+      } else {
+        await api.put(`/clients/${editingClientId}`, clientForm)
+      }
+      cancelClientEdit()
+      await loadClients()
+    } catch {
+      setError('Não foi possível salvar a cliente. Confira os dados e tente novamente.')
+    } finally {
+      setSavingClient(false)
+    }
+  }
+
+  async function deleteClient(client: Client) {
+    if (!window.confirm(`Excluir o contato de ${client.name}?`)) return
+    setError('')
+    try {
+      await api.delete(`/clients/${client.id}`)
+      await loadClients()
+    } catch (requestError) {
+      const detail = axios.isAxiosError<{ detail?: string }>(requestError)
+        ? requestError.response?.data?.detail
+        : undefined
+      setError(detail ?? 'Não foi possível excluir a cliente. Tente novamente.')
+    }
+  }
+
+  function startOrderForClient(client?: Client) {
+    const expectedDate = new Date()
+    expectedDate.setDate(expectedDate.getDate() + 7)
+    const localDate = [
+      expectedDate.getFullYear(),
+      String(expectedDate.getMonth() + 1).padStart(2, '0'),
+      String(expectedDate.getDate()).padStart(2, '0'),
+    ].join('-')
+    setOrderForm({
+      clientId: client ? String(client.id) : '',
+      productId: '',
+      quantity: '1',
+      expectedDate: localDate,
+      notes: '',
+    })
+    setPage('orders')
+    setMenuOpen(false)
+    setError('')
+    void loadClients()
+    void loadOrders()
+  }
+
+  async function saveOrder(event: FormEvent) {
+    event.preventDefault()
+    setSavingOrder(true)
+    setError('')
+    try {
+      await api.post('/orders', {
+        ...orderForm,
+        clientId: Number(orderForm.clientId),
+        productId: Number(orderForm.productId),
+        quantity: Number(orderForm.quantity),
+      })
+      setOrderForm((current) => ({ ...current, notes: '' }))
+      await loadOrders()
+    } catch {
+      setError('Não foi possível cadastrar a encomenda. Confira os dados e tente novamente.')
+    } finally {
+      setSavingOrder(false)
+    }
+  }
+
+  async function deleteProduct(product: Product) {
+    if (!window.confirm(`Deseja excluir o produto "${product.name}" do catálogo?`)) return
+
+    setDeletingProductId(product.id)
+    setError('')
+    setSuccessMessage('')
+    try {
+      await api.delete(`/products/${product.id}`)
+      setProducts((current) => current.filter((item) => item.id !== product.id))
+      setSelectedProductId((current) => current === product.id ? null : current)
+      setSuccessMessage(`Produto "${product.name}" excluído com sucesso.`)
+    } catch (requestError) {
+      const detail = axios.isAxiosError<{ detail?: string }>(requestError)
+        ? requestError.response?.data?.detail
+        : undefined
+      setError(detail ?? 'Não foi possível excluir o produto. Tente novamente.')
+    } finally {
+      setDeletingProductId(null)
+    }
   }
 
   function addVariation() {
@@ -166,8 +546,8 @@ function App() {
         const response = await api.get<UserProfile>('/auth/me')
         setUser(response.data)
         setAuthForm((current) => ({ ...current, password: '', confirmPassword: '' }))
-        setPage('products')
-        await loadProducts()
+        setPage('dashboard')
+        await loadDashboardData()
       }
     } catch (requestError) {
       if (axios.isAxiosError<{ detail?: string; message?: string }>(requestError)) {
@@ -194,7 +574,11 @@ function App() {
       await api.post('/auth/logout')
       setUser(null)
       setProducts([])
-      setPage('products')
+      setClients([])
+      setOrders([])
+      setSales([])
+      setDashboardNotes('')
+      setPage('dashboard')
       setMenuOpen(false)
       setAuthForm({ name: '', phone: '', email: '', password: '', confirmPassword: '' })
       await refreshCsrfToken()
@@ -216,6 +600,58 @@ function App() {
     setStockUpdated(false)
     setPage('stock')
     setError('')
+  }
+
+  function startSale() {
+    const product = products.find((item) => item.id === selectedProductId)
+    if (!product) return
+
+    const currentVariations = product.variations?.length
+      ? product.variations.map((item) => ({ ...item }))
+      : [{ size: 'Único', color: product.category, quantity: product.quantity }]
+    setStockVariations(currentVariations)
+    setSelectedStockVariationIndex(0)
+    setSaleQuantity('1')
+    setPage('sale')
+    setMenuOpen(false)
+    setError('')
+    setSuccessMessage('')
+  }
+
+  async function saveSale(event: FormEvent) {
+    event.preventDefault()
+    const product = products.find((item) => item.id === selectedProductId)
+    const currentVariation = stockVariations[selectedStockVariationIndex]
+    const quantity = Number(saleQuantity)
+    if (!product || !currentVariation || !Number.isInteger(quantity) || quantity < 1) {
+      setError('Informe uma quantidade inteira maior que zero.')
+      return
+    }
+    if (quantity > currentVariation.quantity) {
+      setError('A quantidade informada é maior que o estoque disponível.')
+      return
+    }
+
+    setSavingSale(true)
+    setError('')
+    try {
+      await api.post('/sales', {
+        productId: product.id,
+        variationIndex: selectedStockVariationIndex,
+        quantity,
+      })
+      await Promise.all([loadProducts(), loadSales()])
+      setPage('sales')
+      setSelectedProductId(null)
+      setSuccessMessage('Venda registrada com sucesso.')
+    } catch (requestError) {
+      const detail = axios.isAxiosError<{ detail?: string }>(requestError)
+        ? requestError.response?.data?.detail
+        : undefined
+      setError(detail ?? 'Não foi possível registrar a venda. Tente novamente.')
+    } finally {
+      setSavingSale(false)
+    }
   }
 
   async function updateStock(event: FormEvent) {
@@ -261,14 +697,38 @@ function App() {
 
   const selectedProduct = products.find((item) => item.id === selectedProductId)
   const selectedStockVariation = stockVariations[selectedStockVariationIndex]
+  const totalStock = products.reduce((total, product) => total + (
+    product.variations?.length
+      ? product.variations.reduce((variationTotal, item) => variationTotal + item.quantity, 0)
+      : product.quantity
+  ), 0)
+  const totalSales = sales.reduce((total, sale) => total + sale.totalPrice, 0)
 
   if (authLoading) {
-    return <main className="auth-shell"><p className="auth-loading">Carregando...</p></main>
+    return (
+      <main className="auth-shell">
+        <AccessibilityControls
+          darkMode={darkMode}
+          onToggleTheme={toggleTheme}
+          onIncreaseFont={increaseFontSize}
+          onDecreaseFont={decreaseFontSize}
+        />
+        <p className="auth-loading">Carregando...</p>
+        <FooterBar />
+      </main>
+    )
   }
 
   if (!user) {
     return (
       <main className="auth-shell">
+        <AccessibilityControls
+          darkMode={darkMode}
+          onToggleTheme={toggleTheme}
+          onIncreaseFont={increaseFontSize}
+          onDecreaseFont={decreaseFontSize}
+        />
+
         <section className="auth-card">
           <div className="auth-logo-wrap">
             <img
@@ -366,15 +826,23 @@ function App() {
             </button>
           </div>
         </section>
+        <FooterBar />
       </main>
     )
   }
 
   return (
-    <main>
+    <main className="app-shell">
+      <AccessibilityControls
+        darkMode={darkMode}
+        onToggleTheme={toggleTheme}
+        onIncreaseFont={increaseFontSize}
+        onDecreaseFont={decreaseFontSize}
+      />
+
       <header className="topbar">
         <h1 className="brand">MÃOS CONECTADAS</h1>
-        {page !== 'stock' && <div className="menu-container">
+        {page !== 'stock' && page !== 'sale' && <div className="menu-container">
           <button
             className="menu-toggle"
             type="button"
@@ -412,12 +880,147 @@ function App() {
       <section className="page-heading">
         <h2>{page === 'stock'
           ? 'Atualizar estoque'
-          : navigationItems.find((item) => item.id === page)?.label}</h2>
+          : page === 'sale'
+            ? 'Registrar venda'
+            : navigationItems.find((item) => item.id === page)?.label}</h2>
+        {page === 'dashboard' && <p>Resumo da sua loja em um só lugar, {user.name.split(' ')[0]}.</p>}
+        {page === 'notes' && <p>Consulte e organize seus lembretes.</p>}
         {page === 'products' && <p>Preencha os dados para adicionar ao catálogo.</p>}
         {page === 'stock' && <p>Altere a quantidade de uma variação do produto.</p>}
+        {page === 'sale' && <p>Informe a quantidade vendida para atualizar o estoque e registrar a venda.</p>}
+        {page === 'clients' && <p>Organize seus contatos e anotações sobre cada cliente.</p>}
+        {page === 'orders' && <p>Cadastre e acompanhe as encomendas feitas pelas clientes.</p>}
       </section>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error" role="alert">{error}</p>}
+      {successMessage && <p className="success-message" role="status">{successMessage}</p>}
+
+      {page === 'dashboard' && (
+        <section className="dashboard-page">
+          <div className="dashboard-stats" aria-label="Resumo da loja">
+            <button className="dashboard-stat" type="button" onClick={() => navigateTo('clients')}>
+              <span className="dashboard-stat-label">Clientes</span>
+              <strong>{clients.length}</strong>
+              <span className="dashboard-stat-detail">Ver meus clientes</span>
+            </button>
+            <button className="dashboard-stat" type="button" onClick={() => navigateTo('catalog')}>
+              <span className="dashboard-stat-label">Produtos</span>
+              <strong>{products.length}</strong>
+              <span className="dashboard-stat-detail">Ver meu catálogo</span>
+            </button>
+            <button className="dashboard-stat" type="button" onClick={() => navigateTo('catalog')}>
+              <span className="dashboard-stat-label">Itens em estoque</span>
+              <strong>{totalStock}</strong>
+              <span className="dashboard-stat-detail">Total incluindo variações</span>
+            </button>
+            <button className="dashboard-stat" type="button" onClick={() => navigateTo('orders')}>
+              <span className="dashboard-stat-label">Encomendas</span>
+              <strong>{orders.length}</strong>
+              <span className="dashboard-stat-detail">
+                {orders.filter((order) => order.status === 'PENDENTE').length} pendentes
+              </span>
+            </button>
+            <button className="dashboard-stat" type="button" onClick={() => navigateTo('sales')}>
+              <span className="dashboard-stat-label">Vendas</span>
+              <strong>{sales.length}</strong>
+              <span className="dashboard-stat-detail">Ver histórico de vendas</span>
+            </button>
+            <article className="dashboard-stat dashboard-stat-revenue">
+              <span className="dashboard-stat-label">Total vendido</span>
+              <strong>{new Intl.NumberFormat('pt-BR', {
+                style: 'currency', currency: 'BRL',
+              }).format(totalSales)}</strong>
+              <span className="dashboard-stat-detail">Soma das vendas registradas</span>
+            </article>
+          </div>
+
+          <button className="dashboard-notes-link" type="button" onClick={openDashboardNotes}>
+            <svg className="notebook-icon" viewBox="0 0 48 48" aria-hidden="true">
+              <path d="M13 8.5h25a2 2 0 0 1 2 2v29a2 2 0 0 1-2 2H13a2 2 0 0 1-2-2v-29a2 2 0 0 1 2-2Z" />
+              <path d="M17 8.5v33M22 17h12M22 23h12M22 29h9M7 15h6M7 22h6M7 29h6M7 36h6" />
+            </svg>
+            <span className="dashboard-notes-link-copy">
+              <strong>Bloco de notas</strong>
+              <span>{dashboardNotes.trim() ? 'Abrir lembretes salvos' : 'Adicionar seu primeiro lembrete'}</span>
+            </span>
+            <span className="dashboard-notes-count">
+              {dashboardNotes.trim() ? 'Lembretes salvos' : 'Começar'}
+            </span>
+          </button>
+        </section>
+      )}
+
+      {page === 'notes' && (
+        <section className="dashboard-notes">
+          <div className="dashboard-notes-heading">
+            <div>
+              <h3>Bloco de notas</h3>
+              <p>Seus lembretes ficam salvos na sua conta.</p>
+            </div>
+            <span>{dashboardNotes.length}/5000</span>
+          </div>
+          {editingDashboardNotes ? (
+            <form className="dashboard-notes-editor" onSubmit={saveDashboardNotes}>
+              <label className="visually-hidden" htmlFor="dashboard-notes">
+                Lembretes
+              </label>
+              <textarea
+                id="dashboard-notes"
+                maxLength={5000}
+                placeholder={'Ex.: Separar encomendas para sexta-feira\nComprar mais linha azul'}
+                value={dashboardNotes}
+                onChange={(event) => setDashboardNotes(event.target.value)}
+              />
+              <div className="dashboard-notes-actions">
+                <button className="save-button" type="submit" disabled={savingDashboardNotes}>
+                  {savingDashboardNotes ? 'Salvando...' : 'Salvar alterações'}
+                </button>
+                <button
+                  className="back-to-catalog"
+                  type="button"
+                  disabled={savingDashboardNotes}
+                  onClick={() => {
+                    setEditingDashboardNotes(false)
+                    void loadDashboardNotes()
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              {dashboardNotes.trim() ? (
+                <p className="dashboard-notes-content">{dashboardNotes}</p>
+              ) : (
+                <p className="empty-state">Você ainda não salvou nenhum lembrete.</p>
+              )}
+              <div className="dashboard-notes-actions">
+                <button
+                  className="save-button"
+                  type="button"
+                  onClick={() => setEditingDashboardNotes(true)}
+                >
+                  {dashboardNotes.trim() ? 'Editar lembretes' : 'Adicionar lembrete'}
+                </button>
+                {dashboardNotes.trim() && (
+                  <button
+                    className="delete-product-button"
+                    type="button"
+                    disabled={savingDashboardNotes}
+                    onClick={() => void deleteDashboardNotes()}
+                  >
+                    Excluir lembretes
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+          <button className="back-to-catalog" type="button" onClick={() => navigateTo('dashboard')}>
+            ← Voltar ao início
+          </button>
+        </section>
+      )}
 
       {page === 'products' && (
         <section className="content">
@@ -500,10 +1103,12 @@ function App() {
                   />
                   <span>Selecionar produto</span>
                 </label>
-                <h3>{product.name}</h3>
-                <strong>{new Intl.NumberFormat('pt-BR', {
-                  style: 'currency', currency: 'BRL',
-                }).format(product.price)}</strong>
+                <div className="catalog-card-heading">
+                  <h3>{product.name}</h3>
+                  <strong>{new Intl.NumberFormat('pt-BR', {
+                    style: 'currency', currency: 'BRL',
+                  }).format(product.price)}</strong>
+                </div>
                 <p className="catalog-meta">
                   {product.category}
                   {product.variations?.[0]?.size && ` · Tamanho ${product.variations[0].size}`}
@@ -517,17 +1122,35 @@ function App() {
                     </span>
                   ))}
                 </div>
+                <button
+                  className="delete-product-button"
+                  type="button"
+                  disabled={deletingProductId !== null}
+                  onClick={() => void deleteProduct(product)}
+                >
+                  {deletingProductId === product.id ? 'Excluindo...' : 'Excluir produto'}
+                </button>
               </article>
             ))}
           </div>
-          <button
-            className="save-button stock-update-button"
-            type="button"
-            disabled={selectedProductId === null || savingStock}
-            onClick={startStockUpdate}
-          >
-            Atualizar Estoque
-          </button>
+          <div className="catalog-actions">
+            <button
+              className="save-button stock-update-button"
+              type="button"
+              disabled={selectedProductId === null || savingStock}
+              onClick={startStockUpdate}
+            >
+              Atualizar Estoque
+            </button>
+            <button
+              className="save-button sell-button"
+              type="button"
+              disabled={selectedProductId === null || savingSale}
+              onClick={startSale}
+            >
+              Vender
+            </button>
+          </div>
         </div>
       )}
 
@@ -614,12 +1237,267 @@ function App() {
         </section>
       )}
 
-      {(page === 'clients' || page === 'orders') && (
-        <section className="coming-soon" aria-live="polite">
-          <h3>{page === 'clients' ? 'Cadastro de clientes' : 'Controle de encomendas'}</h3>
-          <p>Esta funcionalidade estará disponível em breve.</p>
+      {page === 'sale' && selectedProduct && selectedStockVariation && (
+        <section className="stock-page">
+          <div className="stock-product-card">
+            <p className="stock-eyebrow">PRODUTO SELECIONADO</p>
+            <h3>{selectedProduct.name}</h3>
+            <p className="stock-product-meta">
+              Categoria: {selectedProduct.category} · {new Intl.NumberFormat('pt-BR', {
+                style: 'currency', currency: 'BRL',
+              }).format(selectedProduct.price)}
+            </p>
+            <div className="stock-variation">
+              <h4>Variação</h4>
+              {stockVariations.length > 1 ? (
+                <select
+                  aria-label="Variação do produto"
+                  value={selectedStockVariationIndex}
+                  onChange={(event) => {
+                    setSelectedStockVariationIndex(Number(event.target.value))
+                    setError('')
+                  }}
+                >
+                  {stockVariations.map((item, index) => (
+                    <option key={`${item.size}-${item.color}-${index}`} value={index}>
+                      Tamanho {item.size} / {item.color}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p>Tamanho {selectedStockVariation.size} / {selectedStockVariation.color}</p>
+              )}
+            </div>
+          </div>
+
+          <form className="stock-form" onSubmit={saveSale}>
+            <div className="stock-current">
+              <span>Disponível em estoque</span>
+              <strong>{selectedStockVariation.quantity} unidades</strong>
+            </div>
+            <label htmlFor="sale-quantity">Quantidade vendida</label>
+            <input
+              id="sale-quantity"
+              min="1"
+              max={selectedStockVariation.quantity}
+              required
+              step="1"
+              type="number"
+              value={saleQuantity}
+              onChange={(event) => {
+                setSaleQuantity(event.target.value)
+                setError('')
+              }}
+            />
+            <p className="stock-hint">O estoque será reduzido ao confirmar a venda.</p>
+            <button className="save-button" type="submit" disabled={savingSale || selectedStockVariation.quantity < 1}>
+              {savingSale ? 'Registrando...' : 'Vendido'}
+            </button>
+          </form>
+
+          <button className="back-to-catalog" type="button" onClick={returnToCatalog}>
+            ← Voltar ao catálogo
+          </button>
         </section>
       )}
+
+      {page === 'sales' && (
+        <section className="feature-page">
+          <div className="client-section">
+            <div className="section-heading">
+              <h3>Vendas registradas</h3>
+              <span>{sales.length} vendas</span>
+            </div>
+            {sales.length === 0 ? (
+              <p className="empty-state">Ainda não há vendas registradas.</p>
+            ) : (
+              <div className="sales-list">
+                {sales.map((sale) => (
+                  <article className="sale-card" key={sale.id}>
+                    <div className="client-card-heading">
+                      <h4>{sale.productName}</h4>
+                      <strong>{new Intl.NumberFormat('pt-BR', {
+                        style: 'currency', currency: 'BRL',
+                      }).format(sale.totalPrice)}</strong>
+                    </div>
+                    <p className="client-contact">{sale.variationLabel} · Quantidade: {sale.quantity}</p>
+                    <p className="client-contact">
+                      Vendido em {new Intl.DateTimeFormat('pt-BR', {
+                        dateStyle: 'medium', timeStyle: 'short',
+                      }).format(new Date(sale.soldAt))}
+                    </p>
+                    <p className="client-contact">
+                      Preço unitário: {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency', currency: 'BRL',
+                      }).format(sale.unitPrice)}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {page === 'clients' && (
+        <section className="feature-page">
+          <div className="form-card">
+            <h3>{editingClientId === null ? 'Novo contato' : 'Editar contato'}</h3>
+            <form className="product-form" onSubmit={saveClient}>
+              <label>Nome *
+                <input required maxLength={120} value={clientForm.name}
+                  onChange={(event) => setClientForm({ ...clientForm, name: event.target.value })} />
+              </label>
+              <div className="form-row">
+                <label>Celular *
+                  <input required maxLength={30} type="tel" value={clientForm.phone}
+                    onChange={(event) => setClientForm({ ...clientForm, phone: event.target.value })} />
+                </label>
+                <label>E-mail
+                  <input maxLength={254} type="email" value={clientForm.email}
+                    onChange={(event) => setClientForm({ ...clientForm, email: event.target.value })} />
+                </label>
+              </div>
+              <label>Observações
+                <textarea maxLength={1000} placeholder="Preferências, medidas ou outras informações"
+                  value={clientForm.notes}
+                  onChange={(event) => setClientForm({ ...clientForm, notes: event.target.value })} />
+              </label>
+              <button className="save-button" type="submit" disabled={savingClient}>
+                {savingClient ? 'Salvando...' : editingClientId === null ? 'Salvar contato' : 'Atualizar contato'}
+              </button>
+              {editingClientId !== null && (
+                <button className="back-to-catalog" type="button" onClick={cancelClientEdit}>
+                  Cancelar edição
+                </button>
+              )}
+            </form>
+          </div>
+
+          <div className="client-section">
+            <div className="section-heading">
+              <h3>Minha agenda</h3>
+              <span>{clients.length} contatos</span>
+            </div>
+            {clients.length === 0 ? (
+              <p className="empty-state">Ainda não há contatos cadastrados.</p>
+            ) : (
+              <div className="client-list">
+                {clients.map((client) => (
+                  <article className="client-card" key={client.id}>
+                    <div className="client-card-heading">
+                      <h4>{client.name}</h4>
+                      <a href={`tel:${client.phone}`}>Ligar</a>
+                    </div>
+                    <p className="client-contact">{client.phone}{client.email && ` · ${client.email}`}</p>
+                    {client.notes && <p className="client-notes">{client.notes}</p>}
+                    <div className="client-actions">
+                      <button className="save-button" type="button"
+                        onClick={() => startOrderForClient(client)}>Nova encomenda</button>
+                      <button className="back-to-catalog" type="button"
+                        onClick={() => startClientEdit(client)}>Editar</button>
+                      <button className="back-to-catalog" type="button"
+                        onClick={() => void deleteClient(client)}>Excluir</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {page === 'orders' && (
+        <section className="feature-page">
+          <div className="form-card">
+            <h3>Nova encomenda</h3>
+            {clients.length === 0 && (
+              <p className="empty-state">
+                Cadastre uma cliente antes de criar a encomenda.
+                <button className="text-button" type="button" onClick={() => navigateTo('clients')}>
+                  Ir para Clientes
+                </button>
+              </p>
+            )}
+            {products.length === 0 && (
+              <p className="empty-state">
+                Cadastre um produto antes de criar a encomenda.
+                <button className="text-button" type="button" onClick={() => navigateTo('products')}>
+                  Ir para Cadastrar produto
+                </button>
+              </p>
+            )}
+            {clients.length > 0 && products.length > 0 && (
+              <form className="product-form" onSubmit={saveOrder}>
+                <label>Cliente *
+                  <select required value={orderForm.clientId}
+                    onChange={(event) => setOrderForm({ ...orderForm, clientId: event.target.value })}>
+                    <option value="">Selecione uma cliente</option>
+                    {clients.map((client) => (
+                      <option key={client.id} value={client.id}>{client.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>Produto *
+                  <select required value={orderForm.productId}
+                    onChange={(event) => setOrderForm({ ...orderForm, productId: event.target.value })}>
+                    <option value="">Selecione um produto</option>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>{product.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <div className="form-row">
+                  <label>Quantidade *
+                    <input required min="1" step="1" type="number" value={orderForm.quantity}
+                      onChange={(event) => setOrderForm({ ...orderForm, quantity: event.target.value })} />
+                  </label>
+                  <label>Previsão de entrega *
+                    <input required type="date" value={orderForm.expectedDate}
+                      onChange={(event) => setOrderForm({ ...orderForm, expectedDate: event.target.value })} />
+                  </label>
+                </div>
+                <label>Observações
+                  <textarea maxLength={1000} placeholder="Detalhes ou combinações da encomenda"
+                    value={orderForm.notes}
+                    onChange={(event) => setOrderForm({ ...orderForm, notes: event.target.value })} />
+                </label>
+                <button className="save-button" type="submit" disabled={savingOrder}>
+                  {savingOrder ? 'Salvando...' : 'Cadastrar encomenda'}
+                </button>
+              </form>
+            )}
+          </div>
+
+          <div className="client-section">
+            <div className="section-heading">
+              <h3>Encomendas cadastradas</h3>
+              <span>{orders.length} encomendas</span>
+            </div>
+            {orders.length === 0 ? (
+              <p className="empty-state">Ainda não há encomendas cadastradas.</p>
+            ) : (
+              <div className="order-list">
+                {orders.map((order) => (
+                  <article className="order-card" key={order.id}>
+                    <div className="client-card-heading">
+                      <h4>{order.productName}</h4>
+                      <span className="order-status">Pendente</span>
+                    </div>
+                    <p className="client-contact">Cliente: {order.clientName} · Quantidade: {order.quantity}</p>
+                    <p className="client-contact">
+                      Previsão: {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' })
+                        .format(new Date(`${order.expectedDate}T12:00:00`))}
+                    </p>
+                    {order.notes && <p className="client-notes">{order.notes}</p>}
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+      <FooterBar />
     </main>
   )
 }

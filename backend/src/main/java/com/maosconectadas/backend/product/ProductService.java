@@ -1,6 +1,7 @@
 package com.maosconectadas.backend.product;
 
 import com.maosconectadas.backend.auth.UserAccount;
+import com.maosconectadas.backend.order.OrderRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -11,9 +12,11 @@ import java.util.stream.Collectors;
 @Service
 public class ProductService {
     private final ProductRepository repository;
+    private final OrderRepository orderRepository;
 
-    public ProductService(ProductRepository repository) {
+    public ProductService(ProductRepository repository, OrderRepository orderRepository) {
         this.repository = repository;
+        this.orderRepository = orderRepository;
     }
 
     public List<Product> findAll(String search, UserAccount owner) {
@@ -46,7 +49,12 @@ public class ProductService {
     }
 
     public void delete(Long id, UserAccount owner) {
-        repository.delete(findById(id, owner));
+        Product product = findById(id, owner);
+        if (orderRepository.existsByProductId(id)) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT, "Não é possível excluir um produto vinculado a encomendas.");
+        }
+        repository.delete(product);
     }
 
     private Product toEntity(ProductRequest request) {

@@ -34,6 +34,9 @@ public class UserAccount implements UserDetails {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Column(length = 5000)
+    private String dashboardNotes;
+
     protected UserAccount() {}
 
     public UserAccount(String name, String phone, String email, String passwordHash) {
@@ -47,6 +50,8 @@ public class UserAccount implements UserDetails {
     public String getName() { return name; }
     public String getPhone() { return phone; }
     public String getEmail() { return email; }
+    public String getDashboardNotes() { return dashboardNotes; }
+    public void setDashboardNotes(String dashboardNotes) { this.dashboardNotes = dashboardNotes; }
 
     @Override
     @JsonIgnore
