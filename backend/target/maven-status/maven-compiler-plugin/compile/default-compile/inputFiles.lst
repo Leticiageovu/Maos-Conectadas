@@ -11,6 +11,10 @@ C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\m
 C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\client\ClientRequest.java
 C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\client\ClientService.java
 C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\config\SecurityConfig.java
+C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\dashboard\DashboardNotesController.java
+C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\dashboard\DashboardNotesRequest.java
+C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\dashboard\DashboardNotesResponse.java
+C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\dashboard\DashboardNotesService.java
 C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\MaosConectadasApplication.java
 C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\order\CustomerOrder.java
 C:\Users\lab\Desktop\Maos-conectadas\Maos-Conectadas\backend\src\main\java\com\maosconectadas\backend\order\OrderController.java

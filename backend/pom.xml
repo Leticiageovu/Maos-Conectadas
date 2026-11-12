@@ -63,11 +63,11 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Banco H2 para testes -->
+        <!-- Banco em memória usado apenas pelos testes -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>runtime</scope>
+            <scope>test</scope>
         </dependency>
 
         <!-- Testes automatizados: JUnit 5 e Mockito -->

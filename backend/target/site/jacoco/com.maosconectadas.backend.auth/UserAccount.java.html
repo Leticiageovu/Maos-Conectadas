@@ -34,43 +34,48 @@ public class UserAccount implements UserDetails {
     @Column(nullable = false)
     private String passwordHash;
 
-<span class="fc" id="L37">    protected UserAccount() {}</span>
+    @Column(length = 5000)
+    private String dashboardNotes;
 
-<span class="fc" id="L39">    public UserAccount(String name, String phone, String email, String passwordHash) {</span>
-<span class="fc" id="L40">        this.name = name;</span>
-<span class="fc" id="L41">        this.phone = phone;</span>
-<span class="fc" id="L42">        this.email = email;</span>
-<span class="fc" id="L43">        this.passwordHash = passwordHash;</span>
-<span class="fc" id="L44">    }</span>
+<span class="fc" id="L40">    protected UserAccount() {}</span>
 
-<span class="fc" id="L46">    public Long getId() { return id; }</span>
-<span class="fc" id="L47">    public String getName() { return name; }</span>
-<span class="fc" id="L48">    public String getPhone() { return phone; }</span>
-<span class="fc" id="L49">    public String getEmail() { return email; }</span>
+<span class="fc" id="L42">    public UserAccount(String name, String phone, String email, String passwordHash) {</span>
+<span class="fc" id="L43">        this.name = name;</span>
+<span class="fc" id="L44">        this.phone = phone;</span>
+<span class="fc" id="L45">        this.email = email;</span>
+<span class="fc" id="L46">        this.passwordHash = passwordHash;</span>
+<span class="fc" id="L47">    }</span>
+
+<span class="fc" id="L49">    public Long getId() { return id; }</span>
+<span class="fc" id="L50">    public String getName() { return name; }</span>
+<span class="fc" id="L51">    public String getPhone() { return phone; }</span>
+<span class="fc" id="L52">    public String getEmail() { return email; }</span>
+<span class="fc" id="L53">    public String getDashboardNotes() { return dashboardNotes; }</span>
+<span class="fc" id="L54">    public void setDashboardNotes(String dashboardNotes) { this.dashboardNotes = dashboardNotes; }</span>
 
     @Override
     @JsonIgnore
     public Collection&lt;? extends GrantedAuthority&gt; getAuthorities() {
-<span class="fc" id="L54">        return List.of(new SimpleGrantedAuthority(&quot;ROLE_USER&quot;));</span>
+<span class="fc" id="L59">        return List.of(new SimpleGrantedAuthority(&quot;ROLE_USER&quot;));</span>
     }
 
     @Override
     @JsonIgnore
-<span class="fc" id="L59">    public String getPassword() { return passwordHash; }</span>
+<span class="fc" id="L64">    public String getPassword() { return passwordHash; }</span>
 
     @Override
-<span class="fc" id="L62">    public String getUsername() { return email; }</span>
+<span class="fc" id="L67">    public String getUsername() { return email; }</span>
 
     @Override
-<span class="fc" id="L65">    public boolean isAccountNonExpired() { return true; }</span>
+<span class="fc" id="L70">    public boolean isAccountNonExpired() { return true; }</span>
 
     @Override
-<span class="fc" id="L68">    public boolean isAccountNonLocked() { return true; }</span>
+<span class="fc" id="L73">    public boolean isAccountNonLocked() { return true; }</span>
 
     @Override
-<span class="fc" id="L71">    public boolean isCredentialsNonExpired() { return true; }</span>
+<span class="fc" id="L76">    public boolean isCredentialsNonExpired() { return true; }</span>
 
     @Override
-<span class="fc" id="L74">    public boolean isEnabled() { return true; }</span>
+<span class="fc" id="L79">    public boolean isEnabled() { return true; }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

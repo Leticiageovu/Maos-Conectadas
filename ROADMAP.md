@@ -160,7 +160,7 @@ O sistema foi pensado para funcionar como uma navegação simples em módulos, c
 - páginas de produtos, clientes e encomendas;
 - formulários de cadastro e edição;
 - mensagens de sucesso e erro;
-- responsividade para desktop e mobile.
+- responsividade para mobile, tablet e desktop.
 
 **Entregáveis:**
 - interface funcional;

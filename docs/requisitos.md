@@ -10,7 +10,7 @@
 
 ## Requisitos não funcionais
 
-- RNF01: interface responsiva.
+- RNF01: interface responsiva para mobile, tablet e desktop.
 - RNF02: API REST com validação de entrada.
 - RNF03: persistência compatível com PostgreSQL.
 - RNF04: testes automatizados para a lógica principal.

@@ -4,9 +4,9 @@ services:
     environment:
       POSTGRES_DB: maos_conectadas
       POSTGRES_USER: maos
-      POSTGRES_PASSWORD: maos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD in the ignored .env file}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - maos-postgres:/var/lib/postgresql/data
 

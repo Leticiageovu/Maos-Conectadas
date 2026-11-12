@@ -41,7 +41,7 @@ type SaleRecord = {
 
 type UserProfile = { name: string; phone: string; email: string }
 type AuthMode = 'login' | 'register'
-type Page = 'clients' | 'catalog' | 'products' | 'orders' | 'stock' | 'sale' | 'sales'
+type Page = 'dashboard' | 'clients' | 'catalog' | 'products' | 'orders' | 'stock' | 'sale' | 'sales' | 'notes'
 
 type AccessibilityControlsProps = {
   darkMode: boolean
@@ -93,17 +93,48 @@ function AccessibilityControls({
 }
 
 const navigationItems: { id: Page; label: string }[] = [
+  { id: 'dashboard', label: 'Início' },
   { id: 'clients', label: 'Clientes' },
   { id: 'catalog', label: 'Consultar catálogo' },
   { id: 'products', label: 'Cadastrar produto' },
   { id: 'orders', label: 'Encomendas' },
   { id: 'sales', label: 'Vendas' },
+  { id: 'notes', label: 'Lembretes' },
 ]
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '/api',
   withCredentials: true,
 })
+
+function formatToday(date: Date) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
+}
+
+function FooterBar() {
+  const [today, setToday] = useState(() => new Date())
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setToday(new Date())
+    }, 60000)
+
+    return () => window.clearInterval(intervalId)
+  }, [])
+
+  return (
+    <footer className="app-footer">
+      <span className="footer-date">{formatToday(today)}</span>
+      <span className="footer-brand">Mãos Conectadas</span>
+      <span className="footer-author">Letícia Geovú</span>
+    </footer>
+  )
+}
 
 function App() {
   // Preferências de acessibilidade
@@ -148,7 +179,7 @@ function App() {
     setDarkMode((current) => !current)
   }
 
-  const [page, setPage] = useState<Page>('products')
+  const [page, setPage] = useState<Page>('dashboard')
   const [menuOpen, setMenuOpen] = useState(false)
   const [user, setUser] = useState<UserProfile | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -163,6 +194,7 @@ function App() {
   const [clients, setClients] = useState<Client[]>([])
   const [orders, setOrders] = useState<CustomerOrder[]>([])
   const [sales, setSales] = useState<SaleRecord[]>([])
+  const [dashboardNotes, setDashboardNotes] = useState('')
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [saving, setSaving] = useState(false)
@@ -182,6 +214,8 @@ function App() {
   const [stockUpdated, setStockUpdated] = useState(false)
   const [saleQuantity, setSaleQuantity] = useState('1')
   const [savingSale, setSavingSale] = useState(false)
+  const [savingDashboardNotes, setSavingDashboardNotes] = useState(false)
+  const [editingDashboardNotes, setEditingDashboardNotes] = useState(false)
   const [form, setForm] = useState({
     name: '', description: '', category: '', price: '', imageUrl: '',
   })
@@ -232,6 +266,25 @@ function App() {
     }
   }
 
+  async function loadDashboardNotes() {
+    try {
+      const response = await api.get<{ notes: string }>('/dashboard/notes')
+      setDashboardNotes(response.data.notes)
+    } catch {
+      setError('Não foi possível carregar os lembretes do painel. Tente novamente.')
+    }
+  }
+
+  async function loadDashboardData() {
+    await Promise.all([
+      loadProducts(),
+      loadClients(),
+      loadOrders(),
+      loadSales(),
+      loadDashboardNotes(),
+    ])
+  }
+
   async function refreshCsrfToken() {
     const response = await api.get<{ token: string }>('/auth/csrf')
     api.defaults.headers.common['X-CSRF-TOKEN'] = response.data.token
@@ -243,7 +296,7 @@ function App() {
         await refreshCsrfToken()
         const response = await api.get<UserProfile>('/auth/me')
         setUser(response.data)
-        await loadProducts()
+        await loadDashboardData()
       } catch (requestError) {
         if (axios.isAxiosError(requestError) && requestError.response?.status === 401) {
           setUser(null)
@@ -265,11 +318,62 @@ function App() {
     setSuccessMessage('')
     setSelectedProductId(null)
     if (nextPage === 'clients') void loadClients()
+    if (nextPage === 'dashboard') void loadDashboardData()
     if (nextPage === 'orders') {
       void loadClients()
       void loadOrders()
     }
     if (nextPage === 'sales') void loadSales()
+    if (nextPage === 'notes') {
+      setEditingDashboardNotes(false)
+      void loadDashboardNotes()
+    }
+  }
+
+  function openDashboardNotes() {
+    setPage('notes')
+    setMenuOpen(false)
+    setError('')
+    setSuccessMessage('')
+    setEditingDashboardNotes(false)
+    void loadDashboardNotes()
+  }
+
+  async function saveDashboardNotes(event: FormEvent) {
+    event.preventDefault()
+    setSavingDashboardNotes(true)
+    setError('')
+    setSuccessMessage('')
+    try {
+      const response = await api.put<{ notes: string }>('/dashboard/notes', {
+        notes: dashboardNotes,
+      })
+      setDashboardNotes(response.data.notes)
+      setEditingDashboardNotes(false)
+      setSuccessMessage('Lembretes salvos com sucesso.')
+    } catch {
+      setError('Não foi possível salvar os lembretes. Tente novamente.')
+    } finally {
+      setSavingDashboardNotes(false)
+    }
+  }
+
+  async function deleteDashboardNotes() {
+    if (!window.confirm('Deseja excluir todos os lembretes salvos?')) return
+
+    setSavingDashboardNotes(true)
+    setError('')
+    setSuccessMessage('')
+    try {
+      await api.delete('/dashboard/notes')
+      setDashboardNotes('')
+      setEditingDashboardNotes(false)
+      setSuccessMessage('Lembretes excluídos com sucesso.')
+    } catch {
+      setError('Não foi possível excluir os lembretes. Tente novamente.')
+    } finally {
+      setSavingDashboardNotes(false)
+    }
   }
 
   function startClientEdit(client: Client) {
@@ -442,8 +546,8 @@ function App() {
         const response = await api.get<UserProfile>('/auth/me')
         setUser(response.data)
         setAuthForm((current) => ({ ...current, password: '', confirmPassword: '' }))
-        setPage('products')
-        await loadProducts()
+        setPage('dashboard')
+        await loadDashboardData()
       }
     } catch (requestError) {
       if (axios.isAxiosError<{ detail?: string; message?: string }>(requestError)) {
@@ -473,7 +577,8 @@ function App() {
       setClients([])
       setOrders([])
       setSales([])
-      setPage('products')
+      setDashboardNotes('')
+      setPage('dashboard')
       setMenuOpen(false)
       setAuthForm({ name: '', phone: '', email: '', password: '', confirmPassword: '' })
       await refreshCsrfToken()
@@ -592,6 +697,12 @@ function App() {
 
   const selectedProduct = products.find((item) => item.id === selectedProductId)
   const selectedStockVariation = stockVariations[selectedStockVariationIndex]
+  const totalStock = products.reduce((total, product) => total + (
+    product.variations?.length
+      ? product.variations.reduce((variationTotal, item) => variationTotal + item.quantity, 0)
+      : product.quantity
+  ), 0)
+  const totalSales = sales.reduce((total, sale) => total + sale.totalPrice, 0)
 
   if (authLoading) {
     return (
@@ -603,6 +714,7 @@ function App() {
           onDecreaseFont={decreaseFontSize}
         />
         <p className="auth-loading">Carregando...</p>
+        <FooterBar />
       </main>
     )
   }
@@ -714,6 +826,7 @@ function App() {
             </button>
           </div>
         </section>
+        <FooterBar />
       </main>
     )
   }
@@ -770,6 +883,8 @@ function App() {
           : page === 'sale'
             ? 'Registrar venda'
             : navigationItems.find((item) => item.id === page)?.label}</h2>
+        {page === 'dashboard' && <p>Resumo da sua loja em um só lugar, {user.name.split(' ')[0]}.</p>}
+        {page === 'notes' && <p>Consulte e organize seus lembretes.</p>}
         {page === 'products' && <p>Preencha os dados para adicionar ao catálogo.</p>}
         {page === 'stock' && <p>Altere a quantidade de uma variação do produto.</p>}
         {page === 'sale' && <p>Informe a quantidade vendida para atualizar o estoque e registrar a venda.</p>}
@@ -779,6 +894,133 @@ function App() {
 
       {error && <p className="error" role="alert">{error}</p>}
       {successMessage && <p className="success-message" role="status">{successMessage}</p>}
+
+      {page === 'dashboard' && (
+        <section className="dashboard-page">
+          <div className="dashboard-stats" aria-label="Resumo da loja">
+            <button className="dashboard-stat" type="button" onClick={() => navigateTo('clients')}>
+              <span className="dashboard-stat-label">Clientes</span>
+              <strong>{clients.length}</strong>
+              <span className="dashboard-stat-detail">Ver meus clientes</span>
+            </button>
+            <button className="dashboard-stat" type="button" onClick={() => navigateTo('catalog')}>
+              <span className="dashboard-stat-label">Produtos</span>
+              <strong>{products.length}</strong>
+              <span className="dashboard-stat-detail">Ver meu catálogo</span>
+            </button>
+            <button className="dashboard-stat" type="button" onClick={() => navigateTo('catalog')}>
+              <span className="dashboard-stat-label">Itens em estoque</span>
+              <strong>{totalStock}</strong>
+              <span className="dashboard-stat-detail">Total incluindo variações</span>
+            </button>
+            <button className="dashboard-stat" type="button" onClick={() => navigateTo('orders')}>
+              <span className="dashboard-stat-label">Encomendas</span>
+              <strong>{orders.length}</strong>
+              <span className="dashboard-stat-detail">
+                {orders.filter((order) => order.status === 'PENDENTE').length} pendentes
+              </span>
+            </button>
+            <button className="dashboard-stat" type="button" onClick={() => navigateTo('sales')}>
+              <span className="dashboard-stat-label">Vendas</span>
+              <strong>{sales.length}</strong>
+              <span className="dashboard-stat-detail">Ver histórico de vendas</span>
+            </button>
+            <article className="dashboard-stat dashboard-stat-revenue">
+              <span className="dashboard-stat-label">Total vendido</span>
+              <strong>{new Intl.NumberFormat('pt-BR', {
+                style: 'currency', currency: 'BRL',
+              }).format(totalSales)}</strong>
+              <span className="dashboard-stat-detail">Soma das vendas registradas</span>
+            </article>
+          </div>
+
+          <button className="dashboard-notes-link" type="button" onClick={openDashboardNotes}>
+            <svg className="notebook-icon" viewBox="0 0 48 48" aria-hidden="true">
+              <path d="M13 8.5h25a2 2 0 0 1 2 2v29a2 2 0 0 1-2 2H13a2 2 0 0 1-2-2v-29a2 2 0 0 1 2-2Z" />
+              <path d="M17 8.5v33M22 17h12M22 23h12M22 29h9M7 15h6M7 22h6M7 29h6M7 36h6" />
+            </svg>
+            <span className="dashboard-notes-link-copy">
+              <strong>Bloco de notas</strong>
+              <span>{dashboardNotes.trim() ? 'Abrir lembretes salvos' : 'Adicionar seu primeiro lembrete'}</span>
+            </span>
+            <span className="dashboard-notes-count">
+              {dashboardNotes.trim() ? 'Lembretes salvos' : 'Começar'}
+            </span>
+          </button>
+        </section>
+      )}
+
+      {page === 'notes' && (
+        <section className="dashboard-notes">
+          <div className="dashboard-notes-heading">
+            <div>
+              <h3>Bloco de notas</h3>
+              <p>Seus lembretes ficam salvos na sua conta.</p>
+            </div>
+            <span>{dashboardNotes.length}/5000</span>
+          </div>
+          {editingDashboardNotes ? (
+            <form className="dashboard-notes-editor" onSubmit={saveDashboardNotes}>
+              <label className="visually-hidden" htmlFor="dashboard-notes">
+                Lembretes
+              </label>
+              <textarea
+                id="dashboard-notes"
+                maxLength={5000}
+                placeholder={'Ex.: Separar encomendas para sexta-feira\nComprar mais linha azul'}
+                value={dashboardNotes}
+                onChange={(event) => setDashboardNotes(event.target.value)}
+              />
+              <div className="dashboard-notes-actions">
+                <button className="save-button" type="submit" disabled={savingDashboardNotes}>
+                  {savingDashboardNotes ? 'Salvando...' : 'Salvar alterações'}
+                </button>
+                <button
+                  className="back-to-catalog"
+                  type="button"
+                  disabled={savingDashboardNotes}
+                  onClick={() => {
+                    setEditingDashboardNotes(false)
+                    void loadDashboardNotes()
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          ) : (
+            <>
+              {dashboardNotes.trim() ? (
+                <p className="dashboard-notes-content">{dashboardNotes}</p>
+              ) : (
+                <p className="empty-state">Você ainda não salvou nenhum lembrete.</p>
+              )}
+              <div className="dashboard-notes-actions">
+                <button
+                  className="save-button"
+                  type="button"
+                  onClick={() => setEditingDashboardNotes(true)}
+                >
+                  {dashboardNotes.trim() ? 'Editar lembretes' : 'Adicionar lembrete'}
+                </button>
+                {dashboardNotes.trim() && (
+                  <button
+                    className="delete-product-button"
+                    type="button"
+                    disabled={savingDashboardNotes}
+                    onClick={() => void deleteDashboardNotes()}
+                  >
+                    Excluir lembretes
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+          <button className="back-to-catalog" type="button" onClick={() => navigateTo('dashboard')}>
+            ← Voltar ao início
+          </button>
+        </section>
+      )}
 
       {page === 'products' && (
         <section className="content">
@@ -1255,6 +1497,7 @@ function App() {
           </div>
         </section>
       )}
+      <FooterBar />
     </main>
   )
 }
